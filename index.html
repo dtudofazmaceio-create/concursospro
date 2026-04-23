@@ -1568,7 +1568,7 @@ QUESTOES_BANCO['Misto'] = [...QUESTOES_BANCO['GCM Maceió 2026'], ...QUESTOES_BA
 // ══════════════════════════════════════════════════
 //  INDEXEDDB
 // ══════════════════════════════════════════════════
-const DB_NAME='eduvault_al_v3', DB_VER=3;
+const DB_NAME='eduvault_al_v4', DB_VER=4;
 let db;
 
 function openDB() {
@@ -1609,8 +1609,9 @@ let materialFilter='todos';
 // ══════════════════════════════════════════════════
 async function init() {
   await openDB();
-  for(const c of SEED_COURSES){const ex=await dbGet('courses',c.id);if(!ex)await dbPut('courses',c);}
-  const saved=localStorage.getItem('ev_al_v3');
+  // Sempre sobrescreve os seed courses para garantir que todos os módulos sejam carregados
+  for(const c of SEED_COURSES){ await dbPut('courses',c); }
+  const saved=localStorage.getItem('ev_al_v4');
   if(saved){currentUser=JSON.parse(saved);showApp();}
 }
 
@@ -1629,7 +1630,7 @@ async function doLogin(){
   const user=await dbGet('users',email);
   if(!user||user.password!==btoa(pass))return toast('E-mail ou senha incorretos','error');
   currentUser={email:user.email,name:user.name,isAdmin:user.isAdmin||false};
-  localStorage.setItem('ev_al_v3',JSON.stringify(currentUser));
+  localStorage.setItem('ev_al_v4',JSON.stringify(currentUser));
   showApp();
 }
 async function doRegister(){
@@ -1647,7 +1648,7 @@ async function doRegister(){
   switchAuthTab('login');
   document.getElementById('login-email').value=email;
 }
-function doLogout(){currentUser=null;localStorage.removeItem('ev_al_v3');showScreen('screen-auth');}
+function doLogout(){currentUser=null;localStorage.removeItem('ev_al_v4');showScreen('screen-auth');}
 
 // ══════════════════════════════════════════════════
 //  NAVIGATION
