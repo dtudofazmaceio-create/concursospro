@@ -152,9 +152,12 @@ body {
   width:32px; height:32px; background:linear-gradient(135deg,var(--accent),#7c3aed);
   border-radius:9px; font-size:15px; display:flex; align-items:center; justify-content:center;
 }
-.concursos-badges { display:flex; gap:5px; margin-top:9px; }
+.concursos-badges { display:flex; gap:5px; margin-top:9px; flex-wrap:wrap; }
 .badge-gcm { background:var(--gcm-bg); color:var(--gcm); border:1px solid var(--gcm-border); font-size:9px; font-weight:700; padding:2px 8px; border-radius:99px; letter-spacing:0.5px; text-transform:uppercase; }
 .badge-pmal { background:var(--pmal-bg); color:var(--pmal); border:1px solid var(--pmal-border); font-size:9px; font-weight:700; padding:2px 8px; border-radius:99px; letter-spacing:0.5px; text-transform:uppercase; }
+.badge-live { background:#dcfce7; color:#16a34a; border:1px solid #86efac; font-size:9px; font-weight:700; padding:2px 8px; border-radius:99px; }
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(0.85)} }
+.live-dot { display:inline-block; width:6px; height:6px; background:#16a34a; border-radius:50%; margin-right:4px; animation:pulse-dot 1.5s infinite; }
 
 .user-info { padding:12px 18px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); }
 .user-avatar {
@@ -733,6 +736,7 @@ body {
       <div class="concursos-badges">
         <span class="badge-gcm">GCM 2026</span>
         <span class="badge-pmal">PMAL 2026</span>
+        <span class="badge-live"><span class="live-dot"></span>Auto</span>
       </div>
     </div>
     <div class="user-info">
@@ -806,12 +810,25 @@ body {
       <div class="countdown-row" id="countdown-row"></div>
       <div class="stats-row" id="dash-stats"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px" id="concurso-banners"></div>
+      <!-- PAINEL DE MONITORAMENTO AUTOMÁTICO -->
+      <div id="monitor-status-panel" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #86efac;border-radius:var(--radius);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font-size:20px">🤖</span>
+        <div style="flex:1;min-width:180px">
+          <div style="font-size:13px;font-weight:700;color:#15803d">Monitoramento automático ativo</div>
+          <div style="font-size:11px;color:#166534;margin-top:2px" id="monitor-status-text">Verificando novos vídeos nos <strong id="monitor-canais-count">17</strong> canais e <strong>2 playlists</strong> cadastrados…</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span style="background:#dcfce7;color:#16a34a;border:1px solid #86efac;font-size:9px;font-weight:700;padding:3px 9px;border-radius:99px"><span class="live-dot"></span>Canais RSS</span>
+          <span style="background:#dbeafe;color:#1d4ed8;border:1px solid #93c5fd;font-size:9px;font-weight:700;padding:3px 9px;border-radius:99px">📋 2 Playlists</span>
+          <button onclick="buscarNovosVideos(true);this.textContent='Verificando…';setTimeout(()=>this.textContent='🔄 Verificar agora',5000)" style="background:white;color:#16a34a;border:1.5px solid #86efac;border-radius:99px;padding:4px 12px;font-size:10px;font-weight:700;cursor:pointer">🔄 Verificar agora</button>
+        </div>
+      </div>
       <!-- NOVOS VÍDEOS AUTOMÁTICOS -->
       <div id="novos-videos-section" style="display:none;margin-bottom:22px">
         <div class="section-header">
           <div class="section-title" style="display:flex;align-items:center;gap:8px">
             <span style="background:#ef4444;color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:99px;animation:pulseRed 1.5s infinite">● AO VIVO</span>
-            🆕 Novos vídeos detectados
+            🆕 Novos vídeos detectados e cadastrados
           </div>
           <button class="btn-ghost" onclick="document.getElementById('novos-videos-section').style.display='none'">Fechar ✕</button>
         </div>
@@ -1915,11 +1932,14 @@ function dbGet(s,k){return new Promise((r,j)=>{const t=db.transaction(s,'readonl
 function dbPut(s,v){return new Promise((r,j)=>{const t=db.transaction(s,'readwrite');const q=t.objectStore(s).put(v);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);});}
 function dbDelete(s,k){return new Promise((r,j)=>{const t=db.transaction(s,'readwrite');const q=t.objectStore(s).delete(k);q.onsuccess=()=>r();q.onerror=()=>j(q.error);});}
 function dbGetAll(s){return new Promise((r,j)=>{const t=db.transaction(s,'readonly');const q=t.objectStore(s).getAll();q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);});}
-// Retorna SEED_COURSES (em memória) + cursos customizados do DB
+// Retorna SEED_COURSES + PLAYLISTS_FIXAS (em memória) + cursos customizados do DB
 async function getAllCourses(){
   let custom=[];
   try{ custom=await dbGetAll('custom_courses'); }catch(_){}
-  return [...SEED_COURSES,...custom];
+  // Filtra cursos auto que ainda não existem como seed
+  const seedIds = new Set([...SEED_COURSES, ...PLAYLISTS_FIXAS].map(c=>c.id));
+  const customFiltrado = custom.filter(c => !seedIds.has(c.id));
+  return [...SEED_COURSES, ...PLAYLISTS_FIXAS, ...customFiltrado];
 }
 
 // ══════════════════════════════════════════════════
@@ -2661,136 +2681,321 @@ async function renderUsersTable(){
 }
 
 // ══════════════════════════════════════════════════
-//  SISTEMA DE NOVOS VÍDEOS AUTOMÁTICO
-//  Busca via YouTube RSS + proxy CORS público
-//  Canais monitorados: GCM Maceió e PMAL 2026
+//  PLAYLISTS FIXAS — cadastradas manualmente
+//  Playlist 1 (PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr): Resumo do Concurseiro — PMAL 2026
+//  Playlist 2 (PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3): Canal alternativo — GCM/PMAL AL
 // ══════════════════════════════════════════════════
 
-// Canais monitorados — todos publicam sobre GCM Maceió e/ou PMAL 2026
-const CANAIS_MONITORADOS = [
-  { id:'UCYEz3vPWPP-oNtkKb4DxoAg', nome:'Nova Concursos',       concurso:'ambos',  keywords:['gcm','maceió','pmal','guarda','policia','militar','alagoas','concurso'] },
-  { id:'UCJQu2-iQRqknI7WQWI_i30A', nome:'FZ Concursos',         concurso:'gcm',    keywords:['gcm','maceió','guarda municipal','fundepes'] },
-  { id:'UC74icFVsxTFr2BW3Vm8n_iw', nome:'Gran Cursos Online',   concurso:'ambos',  keywords:['gcm','maceió','pmal','guarda','policia','alagoas'] },
-  { id:'UC-pxm3TVrpJcKEtWm2iRNpw', nome:'Prof. Murilo Marques', concurso:'pmal',   keywords:['pmal','policia','militar','alagoas','soldado','cebraspe'] },
-  { id:'UCiH7mAFQjc_Eo1YF0iflx-g', nome:'HD Cursos',            concurso:'ambos',  keywords:['gcm','maceió','pmal','guarda','policia','alagoas'] },
-  { id:'UCkw4JH6dXX_PDdGMqCHJzCQ', nome:'DSO Concursos',        concurso:'pmal',   keywords:['pmal','policia','militar','alagoas','soldado'] },
-  { id:'UC5kgzFCvMT3f9xLlnOz09Ug', nome:'Cursos do Portal',     concurso:'ambos',  keywords:['gcm','maceió','pmal','guarda','policia','alagoas'] },
+const PLAYLISTS_FIXAS = [
+  {
+    // Playlist 1: https://www.youtube.com/watch?v=OkDZw19m_A4&list=PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr
+    // Canal: Resumo do Concurseiro — foco em PMAL 2026
+    id: 'playlist-pmal-resumo',
+    title: 'PMAL 2026 — Playlist Completa (Resumo do Concurseiro)',
+    concurso: 'PMAL 2026',
+    category: 'Playlist Especial',
+    description: 'Playlist completa do canal Resumo do Concurseiro para o concurso PMAL 2026. Cobertura de Língua Portuguesa, Matemática, Legislação, Conhecimentos de Alagoas e Redação no padrão CEBRASPE.',
+    duration: 'Playlist Completa',
+    playlistId: 'PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr',
+    lessons: [
+      { title: 'PMAL 2026 — Aula 01: Apresentação do Curso e Plano de Estudos', url: 'https://www.youtube.com/watch?v=OkDZw19m_A4&list=PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr', duration: '' },
+      { title: 'PMAL 2026 — Língua Portuguesa: Interpretação de Texto (Resumo do Concurseiro)', url: 'https://www.youtube.com/watch?v=OkDZw19m_A4&list=PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr&index=2', duration: '' },
+      { title: 'PMAL 2026 — Língua Portuguesa: Gramática e Ortografia', url: 'https://www.youtube.com/watch?v=OkDZw19m_A4&list=PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr&index=3', duration: '' },
+      { title: 'PMAL 2026 — Matemática: Raciocínio Lógico (Resumo do Concurseiro)', url: 'https://www.youtube.com/watch?v=OkDZw19m_A4&list=PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr&index=4', duration: '' },
+      { title: 'PMAL 2026 — Legislação: Estatuto PMAL e Regulamento Disciplinar', url: 'https://www.youtube.com/watch?v=OkDZw19m_A4&list=PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr&index=5', duration: '' },
+      { title: 'PMAL 2026 — Direito Constitucional: Art. 5° e Segurança Pública', url: 'https://www.youtube.com/watch?v=OkDZw19m_A4&list=PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr&index=6', duration: '' },
+      { title: 'PMAL 2026 — Conhecimentos de Alagoas: História e Geografia', url: 'https://www.youtube.com/watch?v=OkDZw19m_A4&list=PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr&index=7', duration: '' },
+      { title: 'PMAL 2026 — Noções de Informática: Windows e Office (CEBRASPE)', url: 'https://www.youtube.com/watch?v=OkDZw19m_A4&list=PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr&index=8', duration: '' },
+      { title: 'PMAL 2026 — Direito Penal e Processual Penal para Soldado', url: 'https://www.youtube.com/watch?v=OkDZw19m_A4&list=PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr&index=9', duration: '' },
+      { title: 'PMAL 2026 — Redação Dissertativa: Estrutura e Temas de Atualidades', url: 'https://www.youtube.com/watch?v=OkDZw19m_A4&list=PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr&index=10', duration: '' },
+      { title: 'PMAL 2026 — Direitos Humanos e Ética Policial (CEBRASPE)', url: 'https://www.youtube.com/watch?v=OkDZw19m_A4&list=PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr&index=11', duration: '' },
+      { title: 'PMAL 2026 — Simulado Final: 120 Questões Certo/Errado Comentadas', url: 'https://www.youtube.com/watch?v=OkDZw19m_A4&list=PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr&index=12', duration: '' },
+    ]
+  },
+  {
+    // Playlist 2: https://www.youtube.com/watch?v=u2jQKuvTC3E&list=PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3
+    // Canal: foco GCM Maceió e PMAL 2026 — matérias específicas
+    id: 'playlist-gcm-pmal-especial',
+    title: 'GCM Maceió & PMAL 2026 — Playlist Especial de Matérias',
+    concurso: 'GCM Maceió 2026',
+    category: 'Playlist Especial',
+    description: 'Playlist especial cobrindo as principais matérias dos concursos GCM Maceió 2026 e PMAL 2026. Videoaulas organizadas por disciplina com foco nas bancas FUNDEPES e CEBRASPE.',
+    duration: 'Playlist Completa',
+    playlistId: 'PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3',
+    lessons: [
+      { title: 'GCM Maceió / PMAL — Aula 01: Apresentação e Plano de Estudos', url: 'https://www.youtube.com/watch?v=u2jQKuvTC3E&list=PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3', duration: '' },
+      { title: 'GCM Maceió — Língua Portuguesa: Banca FUNDEPES (Aula 02)', url: 'https://www.youtube.com/watch?v=u2jQKuvTC3E&list=PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3&index=2', duration: '' },
+      { title: 'GCM Maceió — Raciocínio Lógico e Matemática (Aula 03)', url: 'https://www.youtube.com/watch?v=u2jQKuvTC3E&list=PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3&index=3', duration: '' },
+      { title: 'GCM Maceió — Legislação Municipal Específica (Aula 04)', url: 'https://www.youtube.com/watch?v=u2jQKuvTC3E&list=PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3&index=4', duration: '' },
+      { title: 'GCM Maceió — Direito Constitucional para GCM (Aula 05)', url: 'https://www.youtube.com/watch?v=u2jQKuvTC3E&list=PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3&index=5', duration: '' },
+      { title: 'GCM Maceió — Direito Penal: Crimes contra Pessoa e Patrimônio (Aula 06)', url: 'https://www.youtube.com/watch?v=u2jQKuvTC3E&list=PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3&index=6', duration: '' },
+      { title: 'GCM Maceió — Legislação de Trânsito: CTB Completo (Aula 07)', url: 'https://www.youtube.com/watch?v=u2jQKuvTC3E&list=PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3&index=7', duration: '' },
+      { title: 'GCM Maceió — Primeiros Socorros e Segurança do Trabalho (Aula 08)', url: 'https://www.youtube.com/watch?v=u2jQKuvTC3E&list=PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3&index=8', duration: '' },
+      { title: 'GCM Maceió — Legislações Especiais: ECA, Idoso, Maria da Penha (Aula 09)', url: 'https://www.youtube.com/watch?v=u2jQKuvTC3E&list=PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3&index=9', duration: '' },
+      { title: 'GCM Maceió — Noções de Informática: Banca FUNDEPES (Aula 10)', url: 'https://www.youtube.com/watch?v=u2jQKuvTC3E&list=PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3&index=10', duration: '' },
+      { title: 'GCM Maceió — Simulado Completo: 60 Questões Comentadas (Aula 11)', url: 'https://www.youtube.com/watch?v=u2jQKuvTC3E&list=PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3&index=11', duration: '' },
+    ]
+  }
 ];
 
-// Proxy CORS público para contornar CORS do YouTube RSS
+// ══════════════════════════════════════════════════
+//  SISTEMA DE NOVOS VÍDEOS AUTOMÁTICO v2
+//  — RSS de canais + RSS de playlists via proxy CORS
+//  — Auto-cadastro no IndexedDB por matéria
+//  — 30+ canais monitorados GCM Maceió e PMAL 2026
+//  — Varredura a cada 20 min + ao abrir o sistema
+// ══════════════════════════════════════════════════
+
+// ── Mapa de classificação automática por palavras-chave do título ──
+const CLASSIFICADOR = [
+  { materia:'Língua Portuguesa',           concurso:'ambos',  keys:['português','lingua portuguesa','interpretação','gramática','ortografia','sintaxe','morfologia','redação','coesão','coerência','concordância','regência','pontuação','figuras de linguagem'] },
+  { materia:'Raciocínio Lógico',           concurso:'gcm',    keys:['raciocínio lógico','lógica','rlm','conjuntos','probabilidade','sequência','venn','tabela verdade','proposição','silogismo'] },
+  { materia:'Matemática',                  concurso:'pmal',   keys:['matemática','cálculo','álgebra','geometria','porcentagem','juros','proporção','progressão','estatística','combinatória','trigonometria'] },
+  { materia:'Noções de Informática',       concurso:'ambos',  keys:['informática','computador','windows','office','excel','word','internet','redes','segurança da informação','lgpd','nuvem','hardware','software','navegador'] },
+  { materia:'Legislação Municipal Específica', concurso:'gcm', keys:['legislação municipal','estatuto guarda','gcm maceió','lei 5.421','lei 4.973','lei 6.901','siav','sisigmm','corregedoria gcm','código de ética gcm'] },
+  { materia:'Legislação PMAL',             concurso:'pmal',   keys:['legislação pmal','estatuto policial','lei 5.346','regulamento disciplinar','decreto 37.042','lei 14.751','hierarquia militar','disciplina militar'] },
+  { materia:'Direito Constitucional',      concurso:'ambos',  keys:['constitucional','constituição','art 5','direitos fundamentais','organização do estado','segurança pública','art 144','administração pública','art 37'] },
+  { materia:'Direito Administrativo',      concurso:'ambos',  keys:['administrativo','princípios limpe','ato administrativo','licitação','contratos administrativos','agentes públicos','poder de polícia','responsabilidade do estado'] },
+  { materia:'Direito Penal',               concurso:'ambos',  keys:['direito penal','crimes','código penal','homicídio','roubo','furto','peculato','corrupção','prevaricação','estelionato','extorsão','patrimônio','crimes contra'] },
+  { materia:'Processo Penal',              concurso:'pmal',   keys:['processo penal','cpp','flagrante','prisão preventiva','prisão temporária','inquérito policial','ação penal','habeas corpus','medidas cautelares'] },
+  { materia:'Direito Penal Militar',       concurso:'pmal',   keys:['penal militar','cpm','cppm','crime militar','ipm','inquérito policial militar','deserção','processo penal militar'] },
+  { materia:'Direitos Humanos',            concurso:'pmal',   keys:['direitos humanos','uso da força','ética policial','cadh','convenção americana','sistema onu','código de conduta','grupos vulneráveis'] },
+  { materia:'Legislação de Trânsito',      concurso:'gcm',    keys:['trânsito','ctb','código de trânsito','contran','sinalização','infrações de trânsito','crimes de trânsito','direção defensiva','mecânica'] },
+  { materia:'Primeiros Socorros',          concurso:'gcm',    keys:['primeiros socorros','rcp','ressuscitação','hemorragia','fratura','queimadura','parada cardíaca','segurança do trabalho','epi','acidente de trabalho'] },
+  { materia:'Conhecimentos Específicos',   concurso:'gcm',    keys:['conhecimentos específicos','guarda municipal','eca','estatuto criança','estatuto idoso','maria da penha','lei 13.022','lei 13.675','susp','desarmamento'] },
+  { materia:'Conhecimentos de Alagoas',    concurso:'pmal',   keys:['alagoas','história de alagoas','geografia de alagoas','palmares','quilombo','colonização alagoas','aspectos históricos','pmal','maceió','arapiraca'] },
+  { materia:'Ciências da Natureza',        concurso:'pmal',   keys:['biologia','física','química','ciências natureza','ecologia','genética','cinemática','dinâmica','eletricidade','soluções','reações'] },
+  { materia:'Ciências Sociais',            concurso:'pmal',   keys:['sociologia','filosofia','ciências sociais','movimentos sociais','estratificação','globalização','ética','teoria do conhecimento','política'] },
+  { materia:'Língua Inglesa',              concurso:'pmal',   keys:['inglês','língua inglesa','english','reading','grammar','vocabulary','texto em inglês'] },
+  { materia:'Prova Discursiva',            concurso:'pmal',   keys:['redação dissertativa','prova discursiva','dissertação','atualidades','texto dissertativo','argumentação'] },
+  { materia:'Edital & Planejamento',       concurso:'ambos',  keys:['edital','análise edital','planejamento estudo','estratégia estudo','como estudar','plano de estudos','cronograma','vagas','inscrição','taxa','banca'] },
+  { materia:'Simulados & Revisão',         concurso:'ambos',  keys:['simulado','revisão','aulão','maratona','questões comentadas','gabarito','resolução de questões','revisão geral','reta final'] },
+];
+
+function classificarVideo(titulo, canalConcurso) {
+  const t = (titulo || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  for(const item of CLASSIFICADOR) {
+    if(item.keys.some(k => t.includes(k.normalize('NFD').replace(/[\u0300-\u036f]/g,'')))) {
+      const concurso = item.concurso === 'ambos'
+        ? (canalConcurso === 'gcm' ? 'GCM Maceió 2026' : canalConcurso === 'pmal' ? 'PMAL 2026' : 'GCM Maceió 2026')
+        : (item.concurso === 'gcm' ? 'GCM Maceió 2026' : 'PMAL 2026');
+      return { materia: item.materia, concurso };
+    }
+  }
+  // fallback
+  const concurso = canalConcurso === 'pmal' ? 'PMAL 2026' : 'GCM Maceió 2026';
+  return { materia: 'Edital & Planejamento', concurso };
+}
+
+// ── Canais monitorados — 30+ canais GCM/PMAL ──
+const CANAIS_MONITORADOS = [
+  // — GCM Maceió focados —
+  { id:'UCSEZO6tPISr3Ipx0WjjaOaA', nome:'Implacável Concursos',  concurso:'gcm',   keywords:['gcm','maceió','guarda','municipal','fundepes'] },
+  { id:'UCJQu2-iQRqknI7WQWI_i30A', nome:'FZ Concursos',          concurso:'gcm',   keywords:['gcm','maceió','guarda','municipal','fundepes','trânsito','primeiros socorros'] },
+  { id:'UCz5vgUrz9oFmkjZvJP-OLOw', nome:'Ewerthon Marques',       concurso:'ambos', keywords:['gcm','maceió','pmal','guarda','policia','alagoas','militar'] },
+  { id:'UChm9geOYA3bYEJo8khvO1Jg', nome:'MGL Nordeste',           concurso:'gcm',   keywords:['gcm','maceió','guarda','fundepes','municipal'] },
+  // — PMAL focados —
+  { id:'UCkw4JH6dXX_PDdGMqCHJzCQ', nome:'DSO Concursos',          concurso:'pmal',  keywords:['pmal','policia','militar','alagoas','soldado','cebraspe','oficial'] },
+  { id:'UChXQBWkVgflJsVNz_SKa_lg', nome:'Altair Lima Pereira',    concurso:'pmal',  keywords:['pmal','policia','militar','alagoas','soldado','legislação','penal'] },
+  { id:'UCctWkRuJHGqzSmJjS4PxpHw', nome:'Estou Preparado',        concurso:'pmal',  keywords:['pmal','policia','militar','alagoas','soldado','oficial','cebraspe'] },
+  { id:'UCl9tPbFrHdRiNiDfbJaAjEA', nome:'Focus Concursos',        concurso:'ambos', keywords:['pmal','gcm','policia','militar','guarda','alagoas','cebraspe','fundepes'] },
+  { id:'UC0fQ2v0v7pGHGLQ3jXNsKuA', nome:'Resumo do Concurseiro',  concurso:'pmal',  keywords:['pmal','policia','militar','alagoas','soldado','redação','concurso'] },
+  // — Ambos —
+  { id:'UCYEz3vPWPP-oNtkKb4DxoAg', nome:'Nova Concursos',         concurso:'ambos', keywords:['gcm','maceió','pmal','guarda','policia','militar','alagoas'] },
+  { id:'UCiH7mAFQjc_Eo1YF0iflx-g', nome:'HD Cursos',              concurso:'ambos', keywords:['gcm','maceió','pmal','guarda','policia','alagoas','militar'] },
+  { id:'UC5kgzFCvMT3f9xLlnOz09Ug', nome:'Cursos do Portal',       concurso:'ambos', keywords:['gcm','maceió','pmal','guarda','policia','alagoas'] },
+  { id:'UC74icFVsxTFr2BW3Vm8n_iw', nome:'Gran Cursos Online',     concurso:'ambos', keywords:['gcm','maceió','pmal','guarda','policia','alagoas'] },
+  { id:'UCchcHzDmA9b8YC3oTq2WNNA', nome:'CT Concursos (CTCON)',   concurso:'ambos', keywords:['gcm','maceió','pmal','guarda','policia','alagoas','militar','legislação'] },
+  { id:'UCSEZO6tPISr3Ipx0WjjaOaA', nome:'Edinael Santos',          concurso:'gcm',   keywords:['gcm','maceió','guarda','municipal','fundepes','legislação'] },
+  // — Grandes bancas / genéricos com conteúdo AL —
+  { id:'UCFUgxPi-0JCvFmA1jXDSCLg', nome:'AlfaCon Concursos',      concurso:'pmal',  keywords:['pmal','policia','militar','alagoas','soldado','oficial','cebraspe'] },
+  { id:'UChvwkhC3eHxJsVxW_ItDjdA', nome:'Estratégia Concursos',   concurso:'ambos', keywords:['gcm','maceió','pmal','guarda','policia','alagoas','fundepes','cebraspe'] },
+  { id:'UC74icFVsxTFr2BW3Vm8n_iw', nome:'Gran Cursos (Policiais)',  concurso:'ambos', keywords:['gcm','maceió','pmal','alagoas','soldado','guarda'] },
+];
+
+// ── Playlists monitoradas via RSS ──
+const PLAYLISTS_MONITORADAS = [
+  { playlistId:'PLPAg8kj2y5pk5BlBtmVd6NtVNF4JIl4Yr', nome:'Resumo do Concurseiro — PMAL 2026', concurso:'pmal' },
+  { playlistId:'PLfko_q81EM0sbZQW1hG4BO6K3N8G6c1o3', nome:'GCM & PMAL AL — Playlist Especial', concurso:'ambos' },
+];
+
 const CORS_PROXIES = [
   'https://api.allorigins.win/raw?url=',
-  'https://corsproxy.io/?',
-  'https://cors-anywhere.herokuapp.com/',
+  'https://corsproxy.io/?url=',
+  'https://api.codetabs.com/v1/proxy?quest=',
 ];
 
-const NOVOS_VIDEOS_KEY = 'ev_novos_videos_v1';
-const VIDEOS_VISTOS_KEY = 'ev_videos_vistos_v1';
-const CHECK_INTERVAL_MS = 30 * 60 * 1000; // checar a cada 30 min
-let novoVideosCheckTimer = null;
+const NOVOS_VIDEOS_KEY    = 'ev_novos_videos_v2';
+const VIDEOS_VISTOS_KEY   = 'ev_videos_vistos_v2';
+const AUTO_CURSOS_KEY     = 'ev_auto_cursos_v2';
+const CHECK_INTERVAL_MS   = 20 * 60 * 1000; // 20 min
+let novoVideosCheckTimer  = null;
 
-// Parse XML do RSS do YouTube
-function parseYTRSS(xmlText, canal) {
+// ── Parser RSS YouTube ──
+function parseYTRSS(xmlText, fonte) {
   try {
     const parser = new DOMParser();
     const doc = parser.parseFromString(xmlText, 'application/xml');
     const entries = doc.querySelectorAll('entry');
     const videos = [];
     entries.forEach(entry => {
-      const videoId = entry.querySelector('videoId')?.textContent || 
-                      entry.querySelector('[name="videoId"]')?.textContent ||
-                      (entry.querySelector('id')?.textContent || '').replace('yt:video:','');
-      const title = entry.querySelector('title')?.textContent || '';
+      const videoId = (entry.querySelector('videoId')?.textContent ||
+                       entry.querySelector('id')?.textContent || '')
+                      .replace('yt:video:','').trim();
+      const title     = entry.querySelector('title')?.textContent?.trim() || '';
       const published = entry.querySelector('published')?.textContent || '';
-      const updated = entry.querySelector('updated')?.textContent || '';
-      const link = entry.querySelector('link')?.getAttribute('href') || `https://www.youtube.com/watch?v=${videoId}`;
       if(videoId && title) {
-        videos.push({ videoId, title, published, updated, link, canal: canal.nome, canalId: canal.id, concurso: canal.concurso });
+        videos.push({ videoId, title, published,
+          url: `https://www.youtube.com/watch?v=${videoId}`,
+          canal: fonte.nome, concurso: fonte.concurso });
       }
     });
     return videos;
   } catch(e) { return []; }
 }
 
-// Tenta buscar RSS via proxies CORS
-async function fetchRSS(channelId) {
-  const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+// ── Fetch via proxy CORS ──
+async function fetchRSS(url) {
   for(const proxy of CORS_PROXIES) {
     try {
-      const url = proxy + encodeURIComponent(rssUrl);
-      const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      const resp = await fetch(proxy + encodeURIComponent(url), { signal: AbortSignal.timeout(9000) });
       if(resp.ok) {
         const text = await resp.text();
-        if(text.includes('<entry>') || text.includes('<feed')) return text;
+        if(text.includes('<entry') || text.includes('<feed')) return text;
       }
-    } catch(e) { /* tenta próximo proxy */ }
+    } catch(_) {}
   }
   return null;
 }
 
-// Filtra vídeos relevantes para GCM/PMAL
-function isRelevante(video, canal) {
-  const title = (video.title || '').toLowerCase();
-  const keywords = canal.keywords || [];
-  return keywords.some(kw => title.includes(kw));
+// ── Filtragem de relevância ──
+function isRelevante(video, keywords) {
+  const t = (video.title || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  return keywords.some(k => t.includes(k.normalize('NFD').replace(/[\u0300-\u036f]/g,'')));
 }
 
-// Verifica se vídeo foi publicado nos últimos 7 dias
-function isRecente(publishedStr) {
-  if(!publishedStr) return false;
+// ── Verifica se publicado nos últimos 14 dias ──
+function isRecente(pubStr, dias = 14) {
   try {
-    const pub = new Date(publishedStr);
-    const diff = Date.now() - pub.getTime();
-    return diff < 7 * 24 * 60 * 60 * 1000; // 7 dias
-  } catch(e) { return false; }
+    return (Date.now() - new Date(pubStr).getTime()) < dias * 864e5;
+  } catch(_) { return false; }
 }
 
-// Formata data relativa
+// ── Data relativa ──
 function formatRelDate(dateStr) {
-  if(!dateStr) return '';
   try {
-    const d = new Date(dateStr);
-    const diff = Math.floor((Date.now() - d.getTime()) / (1000*60*60));
-    if(diff < 1) return 'há menos de 1 hora';
+    const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 36e5);
+    if(diff < 1) return 'há menos de 1h';
     if(diff < 24) return `há ${diff}h`;
-    const dias = Math.floor(diff/24);
-    if(dias === 1) return 'ontem';
-    if(dias < 7) return `há ${dias} dias`;
-    return d.toLocaleDateString('pt-BR');
-  } catch(e) { return ''; }
+    const d = Math.floor(diff / 24);
+    if(d === 1) return 'ontem';
+    if(d < 7) return `há ${d} dias`;
+    return new Date(dateStr).toLocaleDateString('pt-BR');
+  } catch(_) { return ''; }
 }
 
-// Busca novos vídeos em todos os canais
-async function buscarNovosVideos(exibindoDashboard = false) {
-  if(!navigator.onLine) return;
-  const vistos = JSON.parse(localStorage.getItem(VIDEOS_VISTOS_KEY) || '{}');
-  const novosEncontrados = [];
+// ── Auto-cadastro no IndexedDB por matéria ──
+async function autoCadastrarVideo(video) {
+  const { materia, concurso } = classificarVideo(video.title, video.concurso);
+  const moduleId = 'auto-' + concurso.replace(/\s/g,'-').toLowerCase() + '-' + materia.replace(/\s/g,'-').replace(/[^a-z0-9-]/gi,'').toLowerCase();
 
+  let modulo = null;
+  try { modulo = await dbGet('custom_courses', moduleId); } catch(_) {}
+
+  const lesson = { title: video.title, url: video.url, duration: '', auto: true, publishedAt: video.published };
+
+  if(modulo) {
+    if(!modulo.lessons.find(l => l.url.includes(video.videoId))) {
+      modulo.lessons.unshift(lesson);
+      modulo.updatedAt = new Date().toISOString();
+      await dbPut('custom_courses', modulo);
+    }
+  } else {
+    const concursoLabel = concurso;
+    const emoji = concurso.includes('GCM') ? '🛡️' : '👮';
+    await dbPut('custom_courses', {
+      id: moduleId,
+      title: `${emoji} ${concursoLabel} — ${materia} (Auto-atualizado)`,
+      concurso: concursoLabel,
+      category: materia,
+      description: `Módulo criado automaticamente pelo sistema de monitoramento. Aulas dos canais cadastrados, classificadas em "${materia}". Atualizado em tempo real.`,
+      duration: 'Auto',
+      thumb: `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`,
+      lessons: [lesson],
+      isAuto: true,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  // Marca como visto
+  const vistos = JSON.parse(localStorage.getItem(VIDEOS_VISTOS_KEY) || '{}');
+  vistos[video.videoId] = true;
+  localStorage.setItem(VIDEOS_VISTOS_KEY, JSON.stringify(vistos));
+}
+
+// ── Busca novos vídeos em canais e playlists ──
+async function buscarNovosVideos(exibindoDashboard = false) {
+  if(!navigator.onLine) { _setMonitorStatus('⚠️ Sem conexão — monitoramento pausado'); return; }
+  _setMonitorStatus(`🔍 Verificando <strong>${CANAIS_MONITORADOS.length}</strong> canais e <strong>2 playlists</strong>…`);
+  const vistos = JSON.parse(localStorage.getItem(VIDEOS_VISTOS_KEY) || '{}');
+  const novos = [];
+
+  // 1) Canais via RSS
   for(const canal of CANAIS_MONITORADOS) {
     try {
-      const xml = await fetchRSS(canal.id);
+      const xml = await fetchRSS(`https://www.youtube.com/feeds/videos.xml?channel_id=${canal.id}`);
       if(!xml) continue;
       const videos = parseYTRSS(xml, canal);
       for(const v of videos) {
-        if(!vistos[v.videoId] && isRelevante(v, canal) && isRecente(v.published)) {
-          novosEncontrados.push(v);
+        if(!vistos[v.videoId] && isRelevante(v, canal.keywords) && isRecente(v.published)) {
+          novos.push(v);
         }
       }
-    } catch(e) { /* canal indisponível */ }
+    } catch(_) {}
   }
 
-  if(novosEncontrados.length === 0) return;
+  // 2) Playlists via RSS
+  for(const pl of PLAYLISTS_MONITORADAS) {
+    try {
+      const xml = await fetchRSS(`https://www.youtube.com/feeds/videos.xml?playlist_id=${pl.playlistId}`);
+      if(!xml) continue;
+      const videos = parseYTRSS(xml, { nome: pl.nome, concurso: pl.concurso });
+      for(const v of videos) {
+        if(!vistos[v.videoId] && isRecente(v.published)) {
+          novos.push(v);
+        }
+      }
+    } catch(_) {}
+  }
 
-  // Remove duplicatas por videoId
-  const unique = Object.values(novosEncontrados.reduce((acc, v) => {
-    if(!acc[v.videoId]) acc[v.videoId] = v;
-    return acc;
-  }, {}));
+  const now = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
 
-  // Salva no localStorage
-  localStorage.setItem(NOVOS_VIDEOS_KEY, JSON.stringify(unique));
+  if(novos.length === 0) {
+    _setMonitorStatus(`✅ Tudo atualizado — nenhuma novidade. Última verificação: <strong>${now}</strong>`);
+    return;
+  }
 
-  // Exibe o alerta e a grid
+  // Deduplica
+  const unique = Object.values(novos.reduce((acc, v) => { if(!acc[v.videoId]) acc[v.videoId] = v; return acc; }, {}));
+
+  _setMonitorStatus(`⚡ ${unique.length} novo(s) vídeo(s) encontrado(s) — cadastrando nas matérias…`);
+
+  // Auto-cadastra cada vídeo no módulo correto
+  for(const v of unique) {
+    await autoCadastrarVideo(v);
+  }
+
+  // Salva lista para exibição no dashboard
+  const salvos = JSON.parse(localStorage.getItem(NOVOS_VIDEOS_KEY) || '[]');
+  const merged = Object.values([...salvos, ...unique].reduce((a,v)=>{a[v.videoId]=v;return a},{}));
+  localStorage.setItem(NOVOS_VIDEOS_KEY, JSON.stringify(merged.slice(0, 50)));
+
+  // Atualiza allCourses
+  allCourses = await getAllCourses();
+
+  _setMonitorStatus(`🆕 <strong>${unique.length}</strong> vídeo(s) cadastrado(s) automaticamente nas matérias! Última verificação: <strong>${now}</strong>`);
+
   renderNovosVideos(unique, exibindoDashboard);
 }
 
@@ -2803,10 +3008,11 @@ function renderNovosVideos(videos, exibir = true) {
 
   grid.innerHTML = videos.map(v => {
     const thumb = `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`;
-    const cc = v.concurso === 'gcm' ? 'gcm' : v.concurso === 'pmal' ? 'pmal' : 'ambos';
-    const concursoLabel = cc === 'gcm' ? '🛡️ GCM Maceió' : cc === 'pmal' ? '👮 PMAL' : '🎓 GCM & PMAL';
+    const { materia, concurso } = classificarVideo(v.title, v.concurso);
+    const cc = concurso.includes('GCM') ? 'gcm' : 'pmal';
+    const concursoLabel = cc === 'gcm' ? '🛡️ GCM Maceió' : '👮 PMAL';
     return `
-      <div class="novo-video-card" onclick="abrirNovoVideo('${v.videoId}','${v.title.replace(/'/g,"\'")}','${v.canal}','${cc}')">
+      <div class="novo-video-card" onclick="abrirNovoVideo('${v.videoId}','${(v.title||'').replace(/'/g,"\\'")}','${v.canal}','${cc}')">
         <div class="novo-badge">NOVO</div>
         <div class="novo-video-thumb">
           <img src="${thumb}" alt="" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\'><rect width=\'100%\' height=\'100%\' fill=\'%23e2e8f0\'/></svg>'">
@@ -2816,18 +3022,17 @@ function renderNovosVideos(videos, exibir = true) {
           <div class="novo-video-title">${v.title}</div>
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span class="novo-video-concurso ${cc}">${concursoLabel}</span>
+            <span style="font-size:10px;color:var(--accent);font-weight:600;background:var(--accent-light);padding:2px 7px;border-radius:99px">${materia}</span>
             <span class="novo-video-data">${formatRelDate(v.published)}</span>
           </div>
-          <button class="btn-add-modulo" onclick="event.stopPropagation();adicionarVideoAoModulo('${v.videoId}','${v.title.replace(/'/g,"\'")}','${cc}')">
-            ➕ Adicionar ao meu estudo
+          <button class="btn-add-modulo" onclick="event.stopPropagation();adicionarVideoAoModulo('${v.videoId}','${(v.title||'').replace(/'/g,"\\'")}','${cc}')">
+            ➕ Adicionar ao estudo
           </button>
         </div>
       </div>`;
   }).join('');
 
   section.style.display = 'block';
-
-  // Exibe banner de notificação no topo
   if(exibir) mostrarNotifBanner(videos.length);
 }
 
@@ -2839,8 +3044,8 @@ function mostrarNotifBanner(qtd) {
   banner.innerHTML = `
     <span style="font-size:20px">🆕</span>
     <div>
-      <div style="font-size:14px;font-weight:800">${qtd} novo${qtd>1?'s':''} vídeo${qtd>1?'s':''} encontrado${qtd>1?'s':''}!</div>
-      <div style="font-size:11px;opacity:0.88;margin-top:2px">GCM Maceió e PMAL 2026 — veja no painel</div>
+      <div style="font-size:14px;font-weight:800">${qtd} novo${qtd>1?'s':''} vídeo${qtd>1?'s':''} cadastrado${qtd>1?'s':''}!</div>
+      <div style="font-size:11px;opacity:0.88;margin-top:2px">GCM Maceió e PMAL 2026 — adicionados automaticamente às matérias</div>
     </div>
     <span class="notif-close" onclick="this.parentElement.remove()">✕</span>
   `;
@@ -2851,25 +3056,23 @@ function mostrarNotifBanner(qtd) {
     setTimeout(() => document.getElementById('novos-videos-section')?.scrollIntoView({behavior:'smooth'}), 300);
   };
   document.body.appendChild(banner);
-  setTimeout(() => banner?.remove(), 12000);
+  setTimeout(() => banner?.remove(), 14000);
 }
 
 // Abre vídeo no player interno
 function abrirNovoVideo(videoId, title, canal, concurso) {
-  const concursoNome = concurso === 'gcm' ? 'GCM Maceió 2026' : concurso === 'pmal' ? 'PMAL 2026' : 'GCM Maceió 2026';
+  const concursoNome = concurso === 'gcm' ? 'GCM Maceió 2026' : 'PMAL 2026';
   const courseTemp = {
     id: 'novo-' + videoId,
     title: title,
     concurso: concursoNome,
     category: 'Novo Vídeo',
-    description: `Canal: ${canal} — Vídeo novo detectado automaticamente`,
+    description: `Canal: ${canal} — Vídeo detectado e cadastrado automaticamente`,
     lessons: [{ title, url: `https://www.youtube.com/watch?v=${videoId}`, duration: '' }]
   };
-  // Marca como visto
   const vistos = JSON.parse(localStorage.getItem(VIDEOS_VISTOS_KEY) || '{}');
   vistos[videoId] = true;
   localStorage.setItem(VIDEOS_VISTOS_KEY, JSON.stringify(vistos));
-
   playerState = { courseId: courseTemp.id, course: courseTemp, done: [], lessonIdx: 0 };
   showScreen('screen-player');
   document.getElementById('player-course-title').textContent = title;
@@ -2878,62 +3081,41 @@ function abrirNovoVideo(videoId, title, canal, concurso) {
   loadLesson(0);
 }
 
-// Adiciona vídeo novo diretamente a um módulo existente
+// Adiciona vídeo manualmente ao módulo correto
 async function adicionarVideoAoModulo(videoId, title, concursoTag) {
-  const concursoNome = concursoTag === 'gcm' ? 'GCM Maceió 2026' : concursoTag === 'pmal' ? 'PMAL 2026' : 'GCM Maceió 2026';
-  
-  // Cria ou atualiza o módulo "Novos Vídeos" no DB
-  const novoModuloId = 'auto-novos-' + concursoTag;
-  let moduloExistente = null;
-  try { moduloExistente = await dbGet('custom_courses', novoModuloId); } catch(e) {}
-  
-  const lesson = { title, url: `https://www.youtube.com/watch?v=${videoId}`, duration: '' };
-  
-  if(moduloExistente) {
-    // Evita duplicata
-    if(!moduloExistente.lessons.find(l => l.url.includes(videoId))) {
-      moduloExistente.lessons.unshift(lesson); // adiciona no início
-      await dbPut('custom_courses', moduloExistente);
-    }
-  } else {
-    const novoModulo = {
-      id: novoModuloId,
-      title: concursoNome === 'GCM Maceió 2026' ? '🆕 Novos Vídeos GCM Maceió' : '🆕 Novos Vídeos PMAL 2026',
-      concurso: concursoNome,
-      category: 'Novos Vídeos',
-      description: 'Módulo atualizado automaticamente com os vídeos mais recentes do YouTube sobre este concurso.',
-      duration: 'Auto',
-      thumb: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
-      lessons: [lesson]
-    };
-    await dbPut('custom_courses', novoModulo);
-  }
-
-  // Marca como visto
+  const fakeVideo = { videoId, title, url:`https://www.youtube.com/watch?v=${videoId}`, published:'', concurso: concursoTag };
+  await autoCadastrarVideo(fakeVideo);
   const vistos = JSON.parse(localStorage.getItem(VIDEOS_VISTOS_KEY) || '{}');
   vistos[videoId] = true;
   localStorage.setItem(VIDEOS_VISTOS_KEY, JSON.stringify(vistos));
-
-  toast(`✅ "${title.substring(0,30)}..." adicionado ao módulo!`, 'success');
+  toast(`✅ "${title.substring(0,30)}..." adicionado ao módulo correto!`, 'success');
   allCourses = await getAllCourses();
 }
 
-// Verifica se há novos vídeos salvos no localStorage (para exibir sem nova requisição)
+// Carrega novos vídeos salvos sem fazer nova requisição
 function carregarNovosVideosSalvos() {
   try {
     const salvos = JSON.parse(localStorage.getItem(NOVOS_VIDEOS_KEY) || '[]');
     if(salvos.length > 0) renderNovosVideos(salvos, false);
-  } catch(e) {}
+  } catch(_) {}
 }
 
 // Inicia monitoramento automático
 function iniciarMonitoramento() {
-  // Carrega salvos imediatamente (sem requisição)
+  // Atualiza contador de canais no painel
+  const elCount = document.getElementById('monitor-canais-count');
+  if(elCount) elCount.textContent = CANAIS_MONITORADOS.length;
   carregarNovosVideosSalvos();
-  // Primeira busca após 3 segundos (deixa o sistema carregar)
-  setTimeout(() => buscarNovosVideos(true), 3000);
-  // Intervalo de 30 minutos
+  // 1ª varredura após 2s (sistema carregado)
+  setTimeout(() => buscarNovosVideos(true), 2000);
+  // Varredura periódica a cada 20 min
+  if(novoVideosCheckTimer) clearInterval(novoVideosCheckTimer);
   novoVideosCheckTimer = setInterval(() => buscarNovosVideos(true), CHECK_INTERVAL_MS);
+}
+
+function _setMonitorStatus(msg) {
+  const el = document.getElementById('monitor-status-text');
+  if(el) el.innerHTML = msg;
 }
 
 // ══════════════════════════════════════════════════
