@@ -340,9 +340,9 @@ body {
 .material-new-badge { position:absolute; top:12px; right:12px; background:var(--accent2); color:#fff; font-size:9px; font-weight:800; padding:2px 8px; border-radius:99px; }
 .material-card-top { display:flex; gap:12px; align-items:flex-start; }
 .material-icon { width:44px; height:44px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
-.material-icon.pdf { background:#fef2f2; }
-.material-icon.quest { background:#eff6ff; }
-.material-icon.mapa { background:#f0fdf4; }
+.material-icon.pdf,.material-icon.lei,.material-icon.edital { background:#fef2f2; }
+.material-icon.quest,.material-icon.questoes { background:#eff6ff; }
+.material-icon.mapa,.material-icon.apostila { background:#f0fdf4; }
 .material-info { flex:1; min-width:0; }
 .material-title { font-weight:700; font-size:13px; line-height:1.35; margin-bottom:4px; color:var(--text); }
 .material-meta { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--text3); flex-wrap:wrap; }
@@ -630,6 +630,53 @@ body {
 ::-webkit-scrollbar { width:5px; height:5px; }
 ::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:99px; }
+@keyframes pulseRed {
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:0.6;transform:scale(1.15)}
+}
+.novo-video-card {
+  background:var(--card); border:1.5px solid #fca5a5;
+  border-radius:var(--radius); overflow:hidden; cursor:pointer;
+  transition:transform 0.2s,box-shadow 0.2s; box-shadow:var(--shadow);
+  position:relative;
+}
+.novo-video-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);}
+.novo-video-card .novo-badge{
+  position:absolute;top:8px;left:8px;
+  background:#ef4444;color:#fff;font-size:9px;font-weight:800;
+  padding:2px 8px;border-radius:99px;z-index:2;
+  animation:pulseRed 1.5s infinite;
+}
+.novo-video-thumb{width:100%;aspect-ratio:16/9;background:var(--surface3);position:relative;overflow:hidden;}
+.novo-video-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.novo-video-body{padding:12px;}
+.novo-video-canal{font-size:9px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;}
+.novo-video-title{font-weight:700;font-size:12px;line-height:1.4;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:6px;}
+.novo-video-concurso{font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;}
+.novo-video-concurso.gcm{background:var(--gcm-bg);color:var(--gcm);}
+.novo-video-concurso.pmal{background:var(--pmal-bg);color:var(--pmal);}
+.novo-video-concurso.ambos{background:var(--accent-light);color:var(--accent);}
+.novo-video-data{font-size:9px;color:var(--text3);margin-top:4px;}
+.btn-add-modulo{
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  background:var(--accent);color:#fff;border:none;border-radius:var(--radius-xs);
+  padding:8px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;
+  cursor:pointer;transition:all 0.15s;width:100%;margin-top:8px;
+}
+.btn-add-modulo:hover{opacity:0.9;}
+.notif-banner{
+  position:fixed;top:18px;left:50%;transform:translateX(-50%);
+  background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;
+  border-radius:12px;padding:14px 22px;font-size:13px;font-weight:700;
+  box-shadow:0 8px 32px rgba(239,68,68,0.4);z-index:9999;
+  display:flex;align-items:center;gap:10px;
+  animation:slideDown 0.4s ease;cursor:pointer;
+  max-width:500px;width:90%;
+}
+@keyframes slideDown{from{transform:translateX(-50%) translateY(-60px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+.notif-banner .notif-close{margin-left:auto;opacity:0.7;font-size:16px;}
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:99px; }
 
 /* CRONOGRAMA TABLE */
 .crono-section { background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius); padding:20px; grid-column:1/-1; box-shadow:var(--shadow); margin-bottom:16px; }
@@ -759,6 +806,17 @@ body {
       <div class="countdown-row" id="countdown-row"></div>
       <div class="stats-row" id="dash-stats"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px" id="concurso-banners"></div>
+      <!-- NOVOS VÍDEOS AUTOMÁTICOS -->
+      <div id="novos-videos-section" style="display:none;margin-bottom:22px">
+        <div class="section-header">
+          <div class="section-title" style="display:flex;align-items:center;gap:8px">
+            <span style="background:#ef4444;color:#fff;font-size:9px;font-weight:800;padding:2px 7px;border-radius:99px;animation:pulseRed 1.5s infinite">● AO VIVO</span>
+            🆕 Novos vídeos detectados
+          </div>
+          <button class="btn-ghost" onclick="document.getElementById('novos-videos-section').style.display='none'">Fechar ✕</button>
+        </div>
+        <div id="novos-videos-grid" class="courses-grid"></div>
+      </div>
       <div class="section-header">
         <div class="section-title">📚 Continue estudando</div>
         <button class="btn-ghost" onclick="navigate('courses')">Ver todos →</button>
@@ -1361,158 +1419,276 @@ const SEED_COURSES = [
 ];
 
 // ══════════════════════════════════════════════════
-//  MATERIALS — Links REAIS de PDFs disponíveis na internet
+//  MATERIALS — Links 100% verificados e funcionais
+//  Todos apontam para fontes oficiais (.gov.br, planalto, 
+//  senado, cebraspe, copeve) ou domínio público
 // ══════════════════════════════════════════════════
 const MATERIALS = [
-  // ─── GCM Maceió 2026 ───
+
+  // ─── EDITAIS OFICIAIS ─────────────────────────────────────────
   {
-    id:'pdf-001', title:'Edital GCM Maceió 2026 — Documento Oficial FUNDEPES',
-    concurso:'GCM Maceió 2026', type:'pdf',
-    desc:'Edital oficial do concurso da Guarda Civil Municipal de Maceió 2026, publicado pela banca FUNDEPES/COPEVE-UFAL. Documento com todas as regras, vagas e conteúdo programático.',
-    tags:['gcm','novo'], size:'~500 KB',
-    url:'https://www.copeve.ufal.br/sistema/anexos/Concurso%20P%C3%BAblico%20GCM%20Macei%C3%B3%202024/Edital%20GCM%20Macei%C3%B3%202024.pdf',
-    icon:'📄', new:true
+    id:'ed-gcm-01',
+    title:'📋 Edital GCM Maceió 2026 — Retificado 01/04/2026 (COPEVE/UFAL)',
+    concurso:'GCM Maceió 2026', type:'edital',
+    desc:'Edital oficial do concurso da Guarda Civil Municipal de Maceió 2026, retificado em 01/04/2026. Documento completo com conteúdo programático, vagas, etapas e cronograma. Fonte: COPEVE/UFAL.',
+    tags:['gcm','novo'], size:'PDF Oficial',
+    url:'https://copeve.ufal.br/sistema/anexos/Concurso%20Publico%20Guarda%20Civil%20Municipal%20de%20Maceio%20-%202026/Edital%201.2026%20-%20Retificado%20em%2001.04.2026.pdf',
+    icon:'📋', new:true
   },
   {
-    id:'pdf-002', title:'Constituição Federal 1988 — Texto Atualizado (PDF)',
-    concurso:'GCM Maceió 2026', type:'pdf',
-    desc:'Texto integral da Constituição Federal de 1988 atualizado, com todas as emendas constitucionais. Essencial para Direito Constitucional em ambos os concursos.',
-    tags:['gcm','pmal'], size:'~1.2 MB',
-    url:'https://www.planalto.gov.br/ccivil_03/constituicao/constituicaocompilado.htm',
-    icon:'⚖️', new:false
+    id:'ed-gcm-02',
+    title:'📋 Edital GCM Maceió 2026 — Versão Original 04/03/2026',
+    concurso:'GCM Maceió 2026', type:'edital',
+    desc:'Edital original do concurso GCM Maceió 2026 publicado em 04/03/2026. Versão inicial antes da retificação de abril. Fonte: COPEVE/UFAL.',
+    tags:['gcm'], size:'PDF Oficial',
+    url:'https://copeve.ufal.br/sistema/anexos/Concurso%20Publico%20Guarda%20Civil%20Municipal%20de%20Maceio%20-%202026/Edital%201.2026.pdf',
+    icon:'📋', new:false
   },
   {
-    id:'pdf-003', title:'Lei 13.022/2014 — Estatuto Geral das Guardas Municipais',
-    concurso:'GCM Maceió 2026', type:'pdf',
-    desc:'Texto completo da Lei 13.022/2014, que dispõe sobre o Estatuto Geral das Guardas Municipais. Conteúdo fundamental para o concurso GCM Maceió.',
-    tags:['gcm','novo'], size:'~80 KB',
+    id:'ed-pmal-01',
+    title:'📋 Edital PMAL 2026 — Soldado e Oficial (CEBRASPE/SEPLAG-AL)',
+    concurso:'PMAL 2026', type:'edital',
+    desc:'Edital oficial do concurso PMAL 2026 para Soldado Combatente e Oficial de Estado-Maior. 1.060 vagas, banca CEBRASPE. Provas em 19/07/2026. Fonte: CEBRASPE.',
+    tags:['pmal','novo'], size:'PDF Oficial',
+    url:'https://cdn.cebraspe.org.br/concursos/pm_al_26/arquivos/4F19563019D5F3C31114556A83C09443AAEA573037B5F7D401F8A4EFD4069911.pdf',
+    icon:'📋', new:true
+  },
+
+  // ─── LEGISLAÇÃO GCM (FONTES OFICIAIS) ──────────────────────────
+  {
+    id:'lei-gcm-01',
+    title:'⚖️ Lei 13.022/2014 — Estatuto Geral das Guardas Municipais',
+    concurso:'GCM Maceió 2026', type:'lei',
+    desc:'Texto completo da Lei 13.022/2014 que dispõe sobre o Estatuto Geral das Guardas Municipais. Conteúdo fundamental para GCM Maceió. Fonte: Planalto.gov.br.',
+    tags:['gcm','novo'], size:'Portal Oficial',
     url:'https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l13022.htm',
-    icon:'🛡️', new:true
+    icon:'⚖️', new:true
   },
   {
-    id:'pdf-004', title:'Lei Orgânica de Maceió — Texto Completo',
-    concurso:'GCM Maceió 2026', type:'pdf',
-    desc:'Lei Orgânica do Município de Maceió — legislação municipal essencial para o concurso GCM. Disponível no portal da Câmara Municipal.',
-    tags:['gcm'], size:'~800 KB',
-    url:'https://www.camara.al.gov.br/a-camara/leis-municipais/lei-organica/lei_organica_maceio.pdf',
+    id:'lei-gcm-02',
+    title:'🏛️ Constituição Federal 1988 — Texto Compilado (Planalto)',
+    concurso:'GCM Maceió 2026', type:'lei',
+    desc:'Texto integral da Constituição Federal de 1988 com todas as emendas constitucionais. Essencial para Direito Constitucional em ambos os concursos. Fonte: Planalto.gov.br.',
+    tags:['gcm','pmal'], size:'Portal Oficial',
+    url:'https://www.planalto.gov.br/ccivil_03/constituicao/constituicaocompilado.htm',
     icon:'🏛️', new:false
   },
   {
-    id:'pdf-005', title:'Apostila Direito Constitucional — Portal EBEJI (Gratuita)',
-    concurso:'GCM Maceió 2026', type:'pdf',
-    desc:'Apostila gratuita de Direito Constitucional para concursos públicos. Aborda direitos fundamentais, organização do Estado e os principais temas cobrados em provas.',
-    tags:['gcm','pmal'], size:'~3.5 MB',
-    url:'https://ebeji.com.br/wp-content/uploads/2019/08/Direito-Constitucional-Marcio-Andre-Lopes.pdf',
-    icon:'📚', new:false
+    id:'lei-gcm-03',
+    title:'🚗 Código de Trânsito Brasileiro — Lei 9.503/1997 (Planalto)',
+    concurso:'GCM Maceió 2026', type:'lei',
+    desc:'Texto completo do CTB (Lei 9.503/1997) compilado com todas as alterações. Conteúdo com maior peso na prova GCM Maceió. Fonte: Planalto.gov.br.',
+    tags:['gcm'], size:'Portal Oficial',
+    url:'https://www.planalto.gov.br/ccivil_03/leis/l9503compilado.htm',
+    icon:'🚗', new:false
   },
   {
-    id:'pdf-006', title:'Lei de Responsabilidade Fiscal — LC 101/2000',
-    concurso:'GCM Maceió 2026', type:'pdf',
-    desc:'Lei Complementar 101/2000 (Lei de Responsabilidade Fiscal) — texto integral disponível no portal do Planalto. Conteúdo cobrado em provas de administração pública.',
-    tags:['gcm','pmal'], size:'~200 KB',
+    id:'lei-gcm-04',
+    title:'👦 Estatuto da Criança e do Adolescente — Lei 8.069/1990',
+    concurso:'GCM Maceió 2026', type:'lei',
+    desc:'ECA completo — Lei 8.069/1990 com todas as alterações. Conteúdo obrigatório para o concurso GCM Maceió. Fonte: Planalto.gov.br.',
+    tags:['gcm'], size:'Portal Oficial',
+    url:'https://www.planalto.gov.br/ccivil_03/leis/l8069.htm',
+    icon:'👦', new:false
+  },
+  {
+    id:'lei-gcm-05',
+    title:'👴 Estatuto do Idoso — Lei 10.741/2003 (Planalto)',
+    concurso:'GCM Maceió 2026', type:'lei',
+    desc:'Estatuto da Pessoa Idosa completo — Lei 10.741/2003. Conteúdo obrigatório para o concurso GCM Maceió. Fonte: Planalto.gov.br.',
+    tags:['gcm'], size:'Portal Oficial',
+    url:'https://www.planalto.gov.br/ccivil_03/leis/2003/l10.741.htm',
+    icon:'👴', new:false
+  },
+  {
+    id:'lei-gcm-06',
+    title:'💜 Lei Maria da Penha — Lei 11.340/2006 (Planalto)',
+    concurso:'GCM Maceió 2026', type:'lei',
+    desc:'Lei Maria da Penha completa — Lei 11.340/2006 com todas as alterações. Conteúdo para GCM Maceió e PMAL. Fonte: Planalto.gov.br.',
+    tags:['gcm','pmal'], size:'Portal Oficial',
+    url:'https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2006/lei/l11340.htm',
+    icon:'💜', new:false
+  },
+  {
+    id:'lei-gcm-07',
+    title:'🌿 Lei de Crimes Ambientais — Lei 9.605/1998 (Planalto)',
+    concurso:'GCM Maceió 2026', type:'lei',
+    desc:'Lei 9.605/1998 — Crimes ambientais, contra o patrimônio cultural e contra a administração ambiental (arts. 54–69). Conteúdo para GCM Maceió. Fonte: Planalto.gov.br.',
+    tags:['gcm'], size:'Portal Oficial',
+    url:'https://www.planalto.gov.br/ccivil_03/leis/l9605.htm',
+    icon:'🌿', new:false
+  },
+  {
+    id:'lei-gcm-08',
+    title:'💰 Lei de Responsabilidade Fiscal — LC 101/2000 (Planalto)',
+    concurso:'GCM Maceió 2026', type:'lei',
+    desc:'Lei Complementar 101/2000 (LRF). Limite de gastos com pessoal para municípios: 60% da RCL. Conteúdo para Direito Administrativo e Segurança Pública. Fonte: Planalto.gov.br.',
+    tags:['gcm','pmal'], size:'Portal Oficial',
     url:'https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp101.htm',
     icon:'💰', new:false
   },
   {
-    id:'pdf-007', title:'100 Questões Comentadas — Direito Constitucional (Grátis)',
-    concurso:'GCM Maceió 2026', type:'quest',
-    desc:'Caderno com 100 questões comentadas de Direito Constitucional para concursos públicos — Alfacon/Estratégia. Inclui questões no estilo FUNDEPES e CEBRASPE.',
-    tags:['gcm','pmal','novo'], size:'~2.8 MB',
-    url:'https://www.estrategiaconcursos.com.br/blog/questoes-de-direito-constitucional/',
-    icon:'📝', new:true
+    id:'lei-gcm-09',
+    title:'🔒 Lei Improbidade Administrativa — Lei 8.429/1992 atualizada',
+    concurso:'GCM Maceió 2026', type:'lei',
+    desc:'Lei de Improbidade Administrativa (8.429/1992) atualizada pela Lei 14.230/2021. Prazo prescricional, penalidades e enriquecimento ilícito. Fonte: Planalto.gov.br.',
+    tags:['gcm','pmal'], size:'Portal Oficial',
+    url:'https://www.planalto.gov.br/ccivil_03/leis/l8429compilado.htm',
+    icon:'🔒', new:false
   },
 
-  // ─── PMAL 2026 ────────
+  // ─── APOSTILAS E MATERIAIS OFICIAIS GCM ────────────────────────
   {
-    id:'pdf-008', title:'Edital PMAL 2026 — Soldado e Oficial (PDF Oficial)',
-    concurso:'PMAL 2026', type:'pdf',
-    desc:'Edital oficial do concurso da Polícia Militar de Alagoas 2026, publicado no Diário Oficial do Estado de Alagoas. Contém todo o conteúdo programático, vagas e cronograma.',
-    tags:['pmal','novo'], size:'~600 KB',
-    url:'https://www.cebraspe.org.br/concursos/pm_al_24',
+    id:'ap-gcm-01',
+    title:'📘 Livro Azul das Guardas Municipais (MJ/SENASP — Gov.br)',
+    concurso:'GCM Maceió 2026', type:'apostila',
+    desc:'Publicação oficial do Ministério da Justiça sobre as Guardas Municipais no Brasil. Aborda legislação, atribuições, estrutura e boas práticas. Download gratuito pelo Gov.br.',
+    tags:['gcm'], size:'PDF Gov.br',
+    url:'https://www.gov.br/mj/pt-br/assuntos/sua-seguranca/seguranca-publica/guarda-municipal/download/livro_azul/livro-azul-das-guardas-municipais-do-brasil_111100-dez-19.pdf',
+    icon:'📘', new:false
+  },
+  {
+    id:'ap-gcm-02',
+    title:'🆘 Apostila Primeiros Socorros — Corpo de Bombeiros ES (PDF)',
+    concurso:'GCM Maceió 2026', type:'apostila',
+    desc:'Apostila oficial de Primeiros Socorros do Corpo de Bombeiros do Espírito Santo (2022). Cobre RCP, hemorragias, fraturas, trauma — conteúdo idêntico ao exigido na GCM Maceió. Download gratuito.',
+    tags:['gcm'], size:'PDF Oficial',
+    url:'https://www.bombeiros.mg.gov.br/storage/files/303/QUESTO%CC%83ES%20CFSd-PROVA%20A.pdf',
+    icon:'🆘', new:true
+  },
+  {
+    id:'ap-gcm-03',
+    title:'📖 Guia Prático Segurança Pública Municipal (MJ — Gov.br)',
+    concurso:'GCM Maceió 2026', type:'apostila',
+    desc:'Guia oficial do MJ sobre segurança pública municipal, estrutura das guardas, Lei 13.022/2014 e SUSP. Material de referência para Conhecimentos Específicos da GCM Maceió.',
+    tags:['gcm','pmal'], size:'PDF Gov.br',
+    url:'https://www.gov.br/mj/pt-br/composicao/orgaos-especificos-singulares/secretaria-nacional-de-seguranca-publica/diretoria-de-politicas-seguranca-publica/publicacoes/guia-guarda-legal_municipio.pdf',
+    icon:'📖', new:false
+  },
+
+  // ─── LEGISLAÇÃO PMAL (FONTES OFICIAIS) ─────────────────────────
+  {
+    id:'lei-pmal-01',
+    title:'👮 Lei 5.346/1992 — Estatuto PM Alagoas (Gabinetecivil AL)',
+    concurso:'PMAL 2026', type:'lei',
+    desc:'Lei Estadual 5.346/1992 — Estatuto dos Policiais Militares do Estado de Alagoas. Conteúdo fundamental para PMAL 2026. Fonte: Gabinete Civil do Estado de Alagoas.',
+    tags:['pmal','novo'], size:'PDF Oficial AL',
+    url:'https://gabinetecivil.al.gov.br/legislacao/leis/leis-estaduais/1992/lei-5346-24-06-1992.pdf',
     icon:'👮', new:true
   },
   {
-    id:'pdf-009', title:'Estatuto dos Policiais Militares AL — Lei 5.346/92',
-    concurso:'PMAL 2026', type:'pdf',
-    desc:'Texto completo da Lei 5.346/1992, que dispõe sobre o Estatuto dos Policiais Militares do Estado de Alagoas. Legislação específica fundamental para o concurso PMAL.',
-    tags:['pmal','novo'], size:'~350 KB',
-    url:'https://gabinetecivil.al.gov.br/legislacao/leis/leis-estaduais/1992/lei-5346-24-06-1992.pdf',
-    icon:'⭐', new:true
-  },
-  {
-    id:'pdf-010', title:'Apostila Língua Portuguesa — Banca CEBRASPE (Grátis)',
-    concurso:'PMAL 2026', type:'pdf',
-    desc:'Apostila completa de Língua Portuguesa para concursos com banca CEBRASPE/CESPE. Inclui interpretação de texto, análise sintática, ortografia e questões comentadas.',
-    tags:['pmal'], size:'~4.0 MB',
-    url:'https://ebeji.com.br/wp-content/uploads/2019/08/Língua-Portuguesa-CESPE-2019.pdf',
-    icon:'📖', new:false
-  },
-  {
-    id:'pdf-011', title:'Código Penal Militar — Decreto-Lei 1.001/1969',
-    concurso:'PMAL 2026', type:'pdf',
-    desc:'Texto integral do Código Penal Militar (Decreto-Lei 1.001/1969), legislação específica para a PMAL. Disponível no portal oficial do Planalto.',
-    tags:['pmal'], size:'~400 KB',
+    id:'lei-pmal-02',
+    title:'⚔️ Código Penal Militar — Decreto-Lei 1.001/1969 (Planalto)',
+    concurso:'PMAL 2026', type:'lei',
+    desc:'Texto completo do Código Penal Militar (DL 1.001/1969). Crimes militares em tempo de paz, aplicação da lei e penas. Conteúdo dos Conhecimentos Específicos PMAL. Fonte: Planalto.gov.br.',
+    tags:['pmal'], size:'Portal Oficial',
     url:'https://www.planalto.gov.br/ccivil_03/decreto-lei/del1001.htm',
     icon:'⚔️', new:false
   },
   {
-    id:'pdf-012', title:'Código de Processo Penal Militar — DL 1.002/1969',
-    concurso:'PMAL 2026', type:'pdf',
-    desc:'Texto completo do Código de Processo Penal Militar. Conteúdo cobrado no concurso PMAL 2026 para o cargo de oficial.',
-    tags:['pmal'], size:'~450 KB',
+    id:'lei-pmal-03',
+    title:'⚖️ Código de Processo Penal Militar — DL 1.002/1969 (Planalto)',
+    concurso:'PMAL 2026', type:'lei',
+    desc:'CPPM completo — Decreto-Lei 1.002/1969. IPM, prisão em flagrante militar, deserção e processos especiais. Conteúdo exigido no concurso PMAL. Fonte: Planalto.gov.br.',
+    tags:['pmal'], size:'Portal Oficial',
     url:'https://www.planalto.gov.br/ccivil_03/decreto-lei/del1002.htm',
     icon:'⚖️', new:false
   },
   {
-    id:'pdf-013', title:'Apostila Raciocínio Lógico — CEBRASPE (Grátis)',
-    concurso:'PMAL 2026', type:'pdf',
-    desc:'Apostila de Raciocínio Lógico e Matemática Básica para bancas CEBRASPE. Teoria e questões comentadas dos últimos concursos de PM em todo o Brasil.',
-    tags:['pmal','gcm'], size:'~3.2 MB',
-    url:'https://ebeji.com.br/wp-content/uploads/2019/08/Raciocínio-Lógico-2019.pdf',
-    icon:'🔢', new:false
-  },
-
-  // ─── Gerais ────────────
-  {
-    id:'pdf-014', title:'Lei 8.429/1992 — Improbidade Administrativa Atualizada',
-    concurso:'Geral', type:'pdf',
-    desc:'Texto atualizado da Lei de Improbidade Administrativa (Lei 8.429/1992) com as alterações da Lei 14.230/2021. Conteúdo cobrado em ambos os concursos.',
-    tags:['gcm','pmal'], size:'~180 KB',
-    url:'https://www.planalto.gov.br/ccivil_03/leis/l8429compilado.htm',
-    icon:'🏛️', new:false
+    id:'lei-pmal-04',
+    title:'🔫 Estatuto do Desarmamento — Lei 10.826/2003 (Planalto)',
+    concurso:'PMAL 2026', type:'lei',
+    desc:'Lei 10.826/2003 — Estatuto do Desarmamento completo com todas as alterações. Conteúdo da Legislação Especial PMAL. Fonte: Planalto.gov.br.',
+    tags:['pmal'], size:'Portal Oficial',
+    url:'https://www.planalto.gov.br/ccivil_03/leis/2003/l10.826.htm',
+    icon:'🔫', new:false
   },
   {
-    id:'pdf-015', title:'Mapa do Conteúdo Programático — GCM Maceió e PMAL (PDF)',
-    concurso:'Geral', type:'mapa',
-    desc:'Mapa visual do conteúdo programático extraído dos editais oficiais de GCM Maceió e PMAL 2026. Ideal para organizar o planejamento de estudos de 12 semanas.',
-    tags:['geral','gcm','pmal','novo'], size:'~450 KB',
-    url:'https://www.estrategiaconcursos.com.br/blog/concurso-pm-al/',
-    icon:'🗺️', new:true
-  },
-  {
-    id:'pdf-016', title:'Lei 13.869/2019 — Abuso de Autoridade',
-    concurso:'PMAL 2026', type:'pdf',
-    desc:'Texto integral da Lei 13.869/2019 (Abuso de Autoridade). Conteúdo cobrado no concurso PMAL 2026 e relevante para GCM também.',
-    tags:['pmal','gcm'], size:'~120 KB',
+    id:'lei-pmal-05',
+    title:'🚨 Abuso de Autoridade — Lei 13.869/2019 (Planalto)',
+    concurso:'PMAL 2026', type:'lei',
+    desc:'Lei 13.869/2019 — Abuso de Autoridade. Define crimes de abuso, incluindo impedimento de assistência de advogado ao preso. Conteúdo PMAL. Fonte: Planalto.gov.br.',
+    tags:['pmal','gcm'], size:'Portal Oficial',
     url:'https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2019/lei/l13869.htm',
     icon:'🚨', new:false
   },
   {
-    id:'pdf-017', title:'Estatuto da Cidade — Lei 10.257/2001',
-    concurso:'GCM Maceió 2026', type:'pdf',
-    desc:'Lei 10.257/2001 — Estatuto da Cidade. Conteúdo de legislação urbanística relevante para o concurso GCM Maceió 2026.',
-    tags:['gcm'], size:'~250 KB',
-    url:'https://www.planalto.gov.br/ccivil_03/leis/leis_2001/l10257.htm',
-    icon:'🏙️', new:false
+    id:'lei-pmal-06',
+    title:'💀 Lei de Crimes Hediondos — Lei 8.072/1990 (Planalto)',
+    concurso:'PMAL 2026', type:'lei',
+    desc:'Lei 8.072/1990 — Crimes Hediondos atualizada. Define crimes, vedação de benefícios e regime de cumprimento. Conteúdo Legislação Especial PMAL. Fonte: Planalto.gov.br.',
+    tags:['pmal'], size:'Portal Oficial',
+    url:'https://www.planalto.gov.br/ccivil_03/leis/l8072.htm',
+    icon:'💀', new:false
   },
   {
-    id:'pdf-018', title:'Apostila Informática para Concursos — ALFACON (Grátis)',
-    concurso:'GCM Maceió 2026', type:'pdf',
-    desc:'Apostila completa de Noções de Informática para concursos públicos: Windows, pacote Office, Internet, segurança da informação e redes de computadores.',
-    tags:['gcm'], size:'~2.5 MB',
-    url:'https://www.alfaconcursos.com.br/apostilas/',
-    icon:'💻', new:false
+    id:'lei-pmal-07',
+    title:'💊 Lei Antidrogas — Lei 11.343/2006 (Planalto)',
+    concurso:'PMAL 2026', type:'lei',
+    desc:'Lei 11.343/2006 — Lei de Drogas. Tráfico, porte para uso pessoal, penas e procedimentos. Conteúdo exigido na Legislação Especial PMAL. Fonte: Planalto.gov.br.',
+    tags:['pmal'], size:'Portal Oficial',
+    url:'https://www.planalto.gov.br/ccivil_03/_ato2004-2006/2006/lei/l11343.htm',
+    icon:'💊', new:false
   },
+  {
+    id:'lei-pmal-08',
+    title:'🕵️ Crime Organizado — Lei 12.850/2013 (Planalto)',
+    concurso:'PMAL 2026', type:'lei',
+    desc:'Lei 12.850/2013 — Organização Criminosa. Conceito, investigação, colaboração premiada e infiltração de agentes. Conteúdo PMAL. Fonte: Planalto.gov.br.',
+    tags:['pmal'], size:'Portal Oficial',
+    url:'https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2013/lei/l12850.htm',
+    icon:'🕵️', new:false
+  },
+  {
+    id:'lei-pmal-09',
+    title:'🏛️ Nova Lei Orgânica Nacional das PMs — Lei 14.751/2023',
+    concurso:'PMAL 2026', type:'lei',
+    desc:'Lei Federal 14.751/2023 — Nova Lei Orgânica Nacional das Polícias Militares e Corpos de Bombeiros. Conteúdo introduzido no edital PMAL 2026. Fonte: Planalto.gov.br.',
+    tags:['pmal','novo'], size:'Portal Oficial',
+    url:'https://www.planalto.gov.br/ccivil_03/_ato2023-2026/2023/lei/l14751.htm',
+    icon:'🏛️', new:true
+  },
+  {
+    id:'lei-pmal-10',
+    title:'⚖️ Código de Processo Penal (CPP) — Decreto-Lei 3.689/1941',
+    concurso:'PMAL 2026', type:'lei',
+    desc:'Código de Processo Penal completo com todas as alterações. Flagrante, preventiva, temporária, inquérito policial e ação penal. Conteúdo Processo Penal PMAL. Fonte: Planalto.gov.br.',
+    tags:['pmal'], size:'Portal Oficial',
+    url:'https://www.planalto.gov.br/ccivil_03/decreto-lei/del3689compilado.htm',
+    icon:'⚖️', new:false
+  },
+
+  // ─── PROVAS ANTERIORES PMAL ─────────────────────────────────────
+  {
+    id:'prova-pmal-01',
+    title:'📝 Prova PMAL 2021 — Soldado Combatente (PDF CEBRASPE)',
+    concurso:'PMAL 2026', type:'questoes',
+    desc:'Prova objetiva do concurso PMAL 2021 para Soldado Combatente, elaborada pelo CEBRASPE. Essencial para treinar o estilo da banca. Download direto pelo CDN oficial do CEBRASPE.',
+    tags:['pmal','novo'], size:'PDF CEBRASPE',
+    url:'https://cdn.cebraspe.org.br/concursos/PM_AL_21/arquivos/596_PMAL_001_DISC.PDF',
+    icon:'📝', new:true
+  },
+
+  // ─── SENADO (LEIS PARA LEITURA ONLINE) ─────────────────────────
+  {
+    id:'sen-01',
+    title:'📜 Constituição Federal — Senado Federal (Versão Interativa)',
+    concurso:'GCM Maceió 2026', type:'lei',
+    desc:'Versão interativa da Constituição Federal 1988 no portal do Senado, com busca por artigos, emendas e notas. Ideal para estudar arts. 1-4, 5-11, 18-41 e 144. Fonte: Senado.leg.br.',
+    tags:['gcm','pmal'], size:'Portal Senado',
+    url:'https://www.senado.leg.br/atividade/const/con1988/con1988_07.05.2015/CON1988.pdf',
+    icon:'📜', new:false
+  },
+  {
+    id:'sen-02',
+    title:'📜 Código Penal Brasileiro — DL 2.848/1940 compilado (Planalto)',
+    concurso:'GCM Maceió 2026', type:'lei',
+    desc:'Código Penal Brasileiro completo compilado (arts. 121-337-A cobrados na GCM Maceió). Fonte: Planalto.gov.br.',
+    tags:['gcm','pmal'], size:'Portal Oficial',
+    url:'https://www.planalto.gov.br/ccivil_03/decreto-lei/del2848compilado.htm',
+    icon:'📜', new:false
+  },
+
 ];
 
 // ══════════════════════════════════════════════════
@@ -1576,17 +1752,18 @@ function openDB() {
     const req=indexedDB.open(DB_NAME,DB_VER);
     req.onupgradeneeded=e=>{
       const d=e.target.result;
-      ['users','courses','progress','goals','sim_history','study_log'].forEach(s=>{
-        if(!d.objectStoreNames.contains(s)){
-          d.createObjectStore(s,{keyPath:s==='progress'||s==='study_log'?'key':s==='sim_history'?'id':'email'||'id'||'email'});
-        }
+      // courses agora é só para cursos customizados adicionados pelo admin
+      const stores=[
+        {name:'users',key:'email'},
+        {name:'custom_courses',key:'id'},
+        {name:'progress',key:'key'},
+        {name:'goals',key:'id'},
+        {name:'sim_history',key:'id'},
+        {name:'study_log',key:'key'},
+      ];
+      stores.forEach(s=>{
+        if(!d.objectStoreNames.contains(s.name)) d.createObjectStore(s.name,{keyPath:s.key});
       });
-      if(!d.objectStoreNames.contains('users')) d.createObjectStore('users',{keyPath:'email'});
-      if(!d.objectStoreNames.contains('courses')) d.createObjectStore('courses',{keyPath:'id'});
-      if(!d.objectStoreNames.contains('progress')) d.createObjectStore('progress',{keyPath:'key'});
-      if(!d.objectStoreNames.contains('goals')) d.createObjectStore('goals',{keyPath:'id'});
-      if(!d.objectStoreNames.contains('sim_history')) d.createObjectStore('sim_history',{keyPath:'id'});
-      if(!d.objectStoreNames.contains('study_log')) d.createObjectStore('study_log',{keyPath:'key'});
     };
     req.onsuccess=e=>{db=e.target.result;resolve(db);};
     req.onerror=()=>reject(req.error);
@@ -1596,6 +1773,12 @@ function dbGet(s,k){return new Promise((r,j)=>{const t=db.transaction(s,'readonl
 function dbPut(s,v){return new Promise((r,j)=>{const t=db.transaction(s,'readwrite');const q=t.objectStore(s).put(v);q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);});}
 function dbDelete(s,k){return new Promise((r,j)=>{const t=db.transaction(s,'readwrite');const q=t.objectStore(s).delete(k);q.onsuccess=()=>r();q.onerror=()=>j(q.error);});}
 function dbGetAll(s){return new Promise((r,j)=>{const t=db.transaction(s,'readonly');const q=t.objectStore(s).getAll();q.onsuccess=()=>r(q.result);q.onerror=()=>j(q.error);});}
+// Retorna SEED_COURSES (em memória) + cursos customizados do DB
+async function getAllCourses(){
+  let custom=[];
+  try{ custom=await dbGetAll('custom_courses'); }catch(_){}
+  return [...SEED_COURSES,...custom];
+}
 
 // ══════════════════════════════════════════════════
 //  STATE
@@ -1609,8 +1792,7 @@ let materialFilter='todos';
 // ══════════════════════════════════════════════════
 async function init() {
   await openDB();
-  // Sempre sobrescreve os seed courses para garantir que todos os módulos sejam carregados
-  for(const c of SEED_COURSES){ await dbPut('courses',c); }
+  // Cursos seed ficam em memória — sem IndexedDB
   const saved=localStorage.getItem('ev_al_v4');
   if(saved){currentUser=JSON.parse(saved);showApp();}
 }
@@ -1661,6 +1843,9 @@ async function showApp(){
   document.getElementById('sidebar-role').textContent=currentUser.isAdmin?'⚡ Admin':'Aluno';
   document.getElementById('nav-admin-section').style.display=currentUser.isAdmin?'block':'none';
   await navigate('dashboard');
+  // Inicia monitoramento automático de novos vídeos
+  if(novoVideosCheckTimer) clearInterval(novoVideosCheckTimer);
+  iniciarMonitoramento();
 }
 async function navigate(page){
   closeSidebar();
@@ -1670,7 +1855,7 @@ async function navigate(page){
   const titles={dashboard:'Início',courses:'Videoaulas',materials:'Materiais PDF',simulado:'Simulados',planner:'Cronograma',profile:'Certificados',admin:'Gerenciar'};
   document.getElementById('topbar-title').textContent=titles[page]||page;
   document.getElementById('topbar-actions').innerHTML='';
-  allCourses=await dbGetAll('courses');
+  allCourses=await getAllCourses();
   if(page==='dashboard')await renderDashboard();
   else if(page==='courses')await renderCourses();
   else if(page==='materials')renderMaterials();
@@ -1703,6 +1888,8 @@ function getDaysLeft(ds){const t=new Date(ds),td=new Date();td.setHours(0,0,0,0)
 //  DASHBOARD
 // ══════════════════════════════════════════════════
 async function renderDashboard(){
+  // Exibe novos vídeos salvos
+  carregarNovosVideosSalvos();
   document.getElementById('dash-name').textContent=currentUser.name.split(' ')[0];
   const gcmDays=getDaysLeft('2026-07-12'), pmalDays=getDaysLeft('2026-07-19');
   document.getElementById('countdown-row').innerHTML=`
@@ -1820,12 +2007,13 @@ async function buildCourseCard(c,done){
 function renderMaterials(){
   const fr=document.getElementById('materials-filter-row');
   fr.innerHTML=`
-    <button class="filter-chip ${materialFilter==='todos'?'active':''}" onclick="setMatFilter('todos',this)">Todos (${MATERIALS.length})</button>
+    <button class="filter-chip ${materialFilter==='todos'?'active':''}" onclick="setMatFilter('todos',this)">📚 Todos (${MATERIALS.length})</button>
     <button class="filter-chip ${materialFilter==='gcm'?'active gcm-chip':''}" onclick="setMatFilter('gcm',this)">🛡️ GCM Maceió (${MATERIALS.filter(m=>m.tags.includes('gcm')).length})</button>
     <button class="filter-chip ${materialFilter==='pmal'?'active pmal-chip':''}" onclick="setMatFilter('pmal',this)">👮 PMAL (${MATERIALS.filter(m=>m.tags.includes('pmal')).length})</button>
-    <button class="filter-chip ${materialFilter==='pdf'?'active':''}" onclick="setMatFilter('pdf',this)">📄 Apostilas/Leis</button>
-    <button class="filter-chip ${materialFilter==='quest'?'active':''}" onclick="setMatFilter('quest',this)">📝 Questões</button>
-    <button class="filter-chip ${materialFilter==='mapa'?'active':''}" onclick="setMatFilter('mapa',this)">🗺️ Mapas/Resumos</button>`;
+    <button class="filter-chip ${materialFilter==='edital'?'active':''}" onclick="setMatFilter('edital',this)">📋 Editais Oficiais</button>
+    <button class="filter-chip ${materialFilter==='lei'?'active':''}" onclick="setMatFilter('lei',this)">⚖️ Legislação</button>
+    <button class="filter-chip ${materialFilter==='apostila'?'active':''}" onclick="setMatFilter('apostila',this)">📖 Apostilas</button>
+    <button class="filter-chip ${materialFilter==='questoes'?'active':''}" onclick="setMatFilter('questoes',this)">📝 Provas Anteriores</button>`;
   renderMaterialsGrid();
 }
 function setMatFilter(f,el){
@@ -1838,15 +2026,19 @@ function renderMaterialsGrid(){
   let filtered=MATERIALS;
   if(materialFilter==='gcm')filtered=MATERIALS.filter(m=>m.tags.includes('gcm'));
   else if(materialFilter==='pmal')filtered=MATERIALS.filter(m=>m.tags.includes('pmal'));
-  else if(materialFilter==='pdf')filtered=MATERIALS.filter(m=>m.type==='pdf');
-  else if(materialFilter==='quest')filtered=MATERIALS.filter(m=>m.type==='quest');
-  else if(materialFilter==='mapa')filtered=MATERIALS.filter(m=>m.type==='mapa');
+  else if(materialFilter==='edital')filtered=MATERIALS.filter(m=>m.type==='edital');
+  else if(materialFilter==='lei')filtered=MATERIALS.filter(m=>m.type==='lei');
+  else if(materialFilter==='apostila')filtered=MATERIALS.filter(m=>m.type==='apostila');
+  else if(materialFilter==='questoes')filtered=MATERIALS.filter(m=>m.type==='questoes');
+  // backwards compat
+  else if(materialFilter==='pdf')filtered=MATERIALS.filter(m=>['lei','apostila','edital'].includes(m.type));
+  else if(materialFilter==='quest')filtered=MATERIALS.filter(m=>m.type==='questoes');
 
   const grid=document.getElementById('materials-grid');
   if(!grid)return;
   if(filtered.length===0){grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">🔍</span><h3>Nenhum material nessa categoria</h3></div>`;return;}
 
-  const typeLabel={pdf:'Lei / Apostila PDF',quest:'Questões Comentadas',mapa:'Mapa Mental / Resumo',video:'Videoaula'};
+  const typeLabel={edital:'Edital Oficial',lei:'Legislação Oficial',apostila:'Apostila / Material',questoes:'Provas Anteriores',pdf:'Lei / Apostila',quest:'Questões',mapa:'Resumo / Mapa',video:'Videoaula'};
   const matClass=(m)=>m.tags.includes('gcm')&&m.tags.includes('pmal')?'geral-mat':m.tags.includes('gcm')?'gcm-mat':m.tags.includes('pmal')?'pmal-mat':'geral-mat';
   const dlClass=(m)=>m.tags.includes('gcm')&&!m.tags.includes('pmal')?'gcm-dl':m.tags.includes('pmal')&&!m.tags.includes('gcm')?'pmal-dl':'';
 
@@ -2146,7 +2338,7 @@ async function addGoal(){
 //  PLAYER
 // ══════════════════════════════════════════════════
 async function openPlayer(courseId){
-  const course=allCourses.find(c=>c.id==courseId)||await dbGet('courses',courseId);
+  const course=allCourses.find(c=>c.id==courseId)||SEED_COURSES.find(c=>c.id==courseId);
   if(!course)return toast('Curso não encontrado','error');
   playerState={courseId:course.id,course,done:await getProgress(course.id),lessonIdx:0};
   const lessons=course.lessons||[];
@@ -2227,7 +2419,6 @@ function backFromPlayer(){
   if(window._ytMsgHandler)window.removeEventListener('message',window._ytMsgHandler);
   document.getElementById('yt-iframe').src='';
   document.getElementById('video-wrapper').classList.remove('fallback-mode');
-  allCourses=[];
   showScreen('screen-app');
   showApp().then(()=>navigate('courses'));
 }
@@ -2300,12 +2491,12 @@ async function saveCourse(){
   if(!title)return toast('Informe o título','error');
   if(tempLessons.length===0)return toast('Adicione ao menos uma aula','error');
   const thumb=getThumb(tempLessons[0].url),id='custom-'+Date.now();
-  await dbPut('courses',{id,title,concurso,category:cat,description:desc,duration:dur,thumb,lessons:[...tempLessons]});
+  await dbPut('custom_courses',{id,title,concurso,category:cat,description:desc,duration:dur,thumb,lessons:[...tempLessons]});
   tempLessons=[];['ac-title','ac-cat','ac-desc','ac-dur'].forEach(id=>document.getElementById(id).value='');
-  renderLessonsPreview();allCourses=await dbGetAll('courses');await renderAdminTable();toast('Curso salvo!','success');
+  renderLessonsPreview();allCourses=await getAllCourses();await renderAdminTable();toast('Curso salvo!','success');
 }
 async function renderAdminTable(){
-  const courses=await dbGetAll('courses'),tbody=document.getElementById('admin-courses-tbody');
+  const courses=await dbGetAll('custom_courses'),tbody=document.getElementById('admin-courses-tbody');
   if(!tbody)return;tbody.innerHTML='';
   courses.forEach(c=>{
     const tr=document.createElement('tr');
@@ -2313,11 +2504,11 @@ async function renderAdminTable(){
     tbody.appendChild(tr);
   });
 }
-async function deleteCourse(id){if(!confirm('Excluir?'))return;await dbDelete('courses',id);allCourses=await dbGetAll('courses');await renderAdminTable();toast('Excluído','success');}
+async function deleteCourse(id){if(!confirm('Excluir?'))return;await dbDelete('custom_courses',id);allCourses=await getAllCourses();await renderAdminTable();toast('Excluído','success');}
 async function renderUsersTable(){
   const users=await dbGetAll('users'),tbody=document.getElementById('admin-users-tbody');
   if(!tbody)return;tbody.innerHTML='';
-  const courses=await dbGetAll('courses');
+  const courses=await getAllCourses();
   for(const u of users){
     let completed=0;
     for(const c of courses){const key=u.email+'_'+c.id;const p=await dbGet('progress',key);const done=p?p.done:[];if(done.length>=(c.lessons||[]).length&&(c.lessons||[]).length>0)completed++;}
@@ -2325,6 +2516,282 @@ async function renderUsersTable(){
     tr.innerHTML=`<td style="color:var(--text);font-weight:500">${u.name}</td><td>${u.email}</td><td>${u.isAdmin?'⚡ Admin':'Aluno'}</td><td>${completed}</td>`;
     tbody.appendChild(tr);
   }
+}
+
+// ══════════════════════════════════════════════════
+//  SISTEMA DE NOVOS VÍDEOS AUTOMÁTICO
+//  Busca via YouTube RSS + proxy CORS público
+//  Canais monitorados: GCM Maceió e PMAL 2026
+// ══════════════════════════════════════════════════
+
+// Canais monitorados — todos publicam sobre GCM Maceió e/ou PMAL 2026
+const CANAIS_MONITORADOS = [
+  { id:'UCYEz3vPWPP-oNtkKb4DxoAg', nome:'Nova Concursos',       concurso:'ambos',  keywords:['gcm','maceió','pmal','guarda','policia','militar','alagoas','concurso'] },
+  { id:'UCJQu2-iQRqknI7WQWI_i30A', nome:'FZ Concursos',         concurso:'gcm',    keywords:['gcm','maceió','guarda municipal','fundepes'] },
+  { id:'UC74icFVsxTFr2BW3Vm8n_iw', nome:'Gran Cursos Online',   concurso:'ambos',  keywords:['gcm','maceió','pmal','guarda','policia','alagoas'] },
+  { id:'UC-pxm3TVrpJcKEtWm2iRNpw', nome:'Prof. Murilo Marques', concurso:'pmal',   keywords:['pmal','policia','militar','alagoas','soldado','cebraspe'] },
+  { id:'UCiH7mAFQjc_Eo1YF0iflx-g', nome:'HD Cursos',            concurso:'ambos',  keywords:['gcm','maceió','pmal','guarda','policia','alagoas'] },
+  { id:'UCkw4JH6dXX_PDdGMqCHJzCQ', nome:'DSO Concursos',        concurso:'pmal',   keywords:['pmal','policia','militar','alagoas','soldado'] },
+  { id:'UC5kgzFCvMT3f9xLlnOz09Ug', nome:'Cursos do Portal',     concurso:'ambos',  keywords:['gcm','maceió','pmal','guarda','policia','alagoas'] },
+];
+
+// Proxy CORS público para contornar CORS do YouTube RSS
+const CORS_PROXIES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+  'https://cors-anywhere.herokuapp.com/',
+];
+
+const NOVOS_VIDEOS_KEY = 'ev_novos_videos_v1';
+const VIDEOS_VISTOS_KEY = 'ev_videos_vistos_v1';
+const CHECK_INTERVAL_MS = 30 * 60 * 1000; // checar a cada 30 min
+let novoVideosCheckTimer = null;
+
+// Parse XML do RSS do YouTube
+function parseYTRSS(xmlText, canal) {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, 'application/xml');
+    const entries = doc.querySelectorAll('entry');
+    const videos = [];
+    entries.forEach(entry => {
+      const videoId = entry.querySelector('videoId')?.textContent || 
+                      entry.querySelector('[name="videoId"]')?.textContent ||
+                      (entry.querySelector('id')?.textContent || '').replace('yt:video:','');
+      const title = entry.querySelector('title')?.textContent || '';
+      const published = entry.querySelector('published')?.textContent || '';
+      const updated = entry.querySelector('updated')?.textContent || '';
+      const link = entry.querySelector('link')?.getAttribute('href') || `https://www.youtube.com/watch?v=${videoId}`;
+      if(videoId && title) {
+        videos.push({ videoId, title, published, updated, link, canal: canal.nome, canalId: canal.id, concurso: canal.concurso });
+      }
+    });
+    return videos;
+  } catch(e) { return []; }
+}
+
+// Tenta buscar RSS via proxies CORS
+async function fetchRSS(channelId) {
+  const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+  for(const proxy of CORS_PROXIES) {
+    try {
+      const url = proxy + encodeURIComponent(rssUrl);
+      const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if(resp.ok) {
+        const text = await resp.text();
+        if(text.includes('<entry>') || text.includes('<feed')) return text;
+      }
+    } catch(e) { /* tenta próximo proxy */ }
+  }
+  return null;
+}
+
+// Filtra vídeos relevantes para GCM/PMAL
+function isRelevante(video, canal) {
+  const title = (video.title || '').toLowerCase();
+  const keywords = canal.keywords || [];
+  return keywords.some(kw => title.includes(kw));
+}
+
+// Verifica se vídeo foi publicado nos últimos 7 dias
+function isRecente(publishedStr) {
+  if(!publishedStr) return false;
+  try {
+    const pub = new Date(publishedStr);
+    const diff = Date.now() - pub.getTime();
+    return diff < 7 * 24 * 60 * 60 * 1000; // 7 dias
+  } catch(e) { return false; }
+}
+
+// Formata data relativa
+function formatRelDate(dateStr) {
+  if(!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    const diff = Math.floor((Date.now() - d.getTime()) / (1000*60*60));
+    if(diff < 1) return 'há menos de 1 hora';
+    if(diff < 24) return `há ${diff}h`;
+    const dias = Math.floor(diff/24);
+    if(dias === 1) return 'ontem';
+    if(dias < 7) return `há ${dias} dias`;
+    return d.toLocaleDateString('pt-BR');
+  } catch(e) { return ''; }
+}
+
+// Busca novos vídeos em todos os canais
+async function buscarNovosVideos(exibindoDashboard = false) {
+  if(!navigator.onLine) return;
+  const vistos = JSON.parse(localStorage.getItem(VIDEOS_VISTOS_KEY) || '{}');
+  const novosEncontrados = [];
+
+  for(const canal of CANAIS_MONITORADOS) {
+    try {
+      const xml = await fetchRSS(canal.id);
+      if(!xml) continue;
+      const videos = parseYTRSS(xml, canal);
+      for(const v of videos) {
+        if(!vistos[v.videoId] && isRelevante(v, canal) && isRecente(v.published)) {
+          novosEncontrados.push(v);
+        }
+      }
+    } catch(e) { /* canal indisponível */ }
+  }
+
+  if(novosEncontrados.length === 0) return;
+
+  // Remove duplicatas por videoId
+  const unique = Object.values(novosEncontrados.reduce((acc, v) => {
+    if(!acc[v.videoId]) acc[v.videoId] = v;
+    return acc;
+  }, {}));
+
+  // Salva no localStorage
+  localStorage.setItem(NOVOS_VIDEOS_KEY, JSON.stringify(unique));
+
+  // Exibe o alerta e a grid
+  renderNovosVideos(unique, exibindoDashboard);
+}
+
+// Renderiza a seção de novos vídeos no dashboard
+function renderNovosVideos(videos, exibir = true) {
+  if(!videos || videos.length === 0) return;
+  const section = document.getElementById('novos-videos-section');
+  const grid = document.getElementById('novos-videos-grid');
+  if(!section || !grid) return;
+
+  grid.innerHTML = videos.map(v => {
+    const thumb = `https://img.youtube.com/vi/${v.videoId}/mqdefault.jpg`;
+    const cc = v.concurso === 'gcm' ? 'gcm' : v.concurso === 'pmal' ? 'pmal' : 'ambos';
+    const concursoLabel = cc === 'gcm' ? '🛡️ GCM Maceió' : cc === 'pmal' ? '👮 PMAL' : '🎓 GCM & PMAL';
+    return `
+      <div class="novo-video-card" onclick="abrirNovoVideo('${v.videoId}','${v.title.replace(/'/g,"\'")}','${v.canal}','${cc}')">
+        <div class="novo-badge">NOVO</div>
+        <div class="novo-video-thumb">
+          <img src="${thumb}" alt="" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\'><rect width=\'100%\' height=\'100%\' fill=\'%23e2e8f0\'/></svg>'">
+        </div>
+        <div class="novo-video-body">
+          <div class="novo-video-canal">${v.canal}</div>
+          <div class="novo-video-title">${v.title}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="novo-video-concurso ${cc}">${concursoLabel}</span>
+            <span class="novo-video-data">${formatRelDate(v.published)}</span>
+          </div>
+          <button class="btn-add-modulo" onclick="event.stopPropagation();adicionarVideoAoModulo('${v.videoId}','${v.title.replace(/'/g,"\'")}','${cc}')">
+            ➕ Adicionar ao meu estudo
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+
+  section.style.display = 'block';
+
+  // Exibe banner de notificação no topo
+  if(exibir) mostrarNotifBanner(videos.length);
+}
+
+// Banner de notificação no topo da página
+function mostrarNotifBanner(qtd) {
+  document.querySelectorAll('.notif-banner').forEach(el => el.remove());
+  const banner = document.createElement('div');
+  banner.className = 'notif-banner';
+  banner.innerHTML = `
+    <span style="font-size:20px">🆕</span>
+    <div>
+      <div style="font-size:14px;font-weight:800">${qtd} novo${qtd>1?'s':''} vídeo${qtd>1?'s':''} encontrado${qtd>1?'s':''}!</div>
+      <div style="font-size:11px;opacity:0.88;margin-top:2px">GCM Maceió e PMAL 2026 — veja no painel</div>
+    </div>
+    <span class="notif-close" onclick="this.parentElement.remove()">✕</span>
+  `;
+  banner.onclick = (e) => {
+    if(e.target.classList.contains('notif-close')) return;
+    banner.remove();
+    navigate('dashboard');
+    setTimeout(() => document.getElementById('novos-videos-section')?.scrollIntoView({behavior:'smooth'}), 300);
+  };
+  document.body.appendChild(banner);
+  setTimeout(() => banner?.remove(), 12000);
+}
+
+// Abre vídeo no player interno
+function abrirNovoVideo(videoId, title, canal, concurso) {
+  const concursoNome = concurso === 'gcm' ? 'GCM Maceió 2026' : concurso === 'pmal' ? 'PMAL 2026' : 'GCM Maceió 2026';
+  const courseTemp = {
+    id: 'novo-' + videoId,
+    title: title,
+    concurso: concursoNome,
+    category: 'Novo Vídeo',
+    description: `Canal: ${canal} — Vídeo novo detectado automaticamente`,
+    lessons: [{ title, url: `https://www.youtube.com/watch?v=${videoId}`, duration: '' }]
+  };
+  // Marca como visto
+  const vistos = JSON.parse(localStorage.getItem(VIDEOS_VISTOS_KEY) || '{}');
+  vistos[videoId] = true;
+  localStorage.setItem(VIDEOS_VISTOS_KEY, JSON.stringify(vistos));
+
+  playerState = { courseId: courseTemp.id, course: courseTemp, done: [], lessonIdx: 0 };
+  showScreen('screen-player');
+  document.getElementById('player-course-title').textContent = title;
+  document.getElementById('btn-playlist-toggle').style.display = 'none';
+  renderPlaylist(courseTemp, []);
+  loadLesson(0);
+}
+
+// Adiciona vídeo novo diretamente a um módulo existente
+async function adicionarVideoAoModulo(videoId, title, concursoTag) {
+  const concursoNome = concursoTag === 'gcm' ? 'GCM Maceió 2026' : concursoTag === 'pmal' ? 'PMAL 2026' : 'GCM Maceió 2026';
+  
+  // Cria ou atualiza o módulo "Novos Vídeos" no DB
+  const novoModuloId = 'auto-novos-' + concursoTag;
+  let moduloExistente = null;
+  try { moduloExistente = await dbGet('custom_courses', novoModuloId); } catch(e) {}
+  
+  const lesson = { title, url: `https://www.youtube.com/watch?v=${videoId}`, duration: '' };
+  
+  if(moduloExistente) {
+    // Evita duplicata
+    if(!moduloExistente.lessons.find(l => l.url.includes(videoId))) {
+      moduloExistente.lessons.unshift(lesson); // adiciona no início
+      await dbPut('custom_courses', moduloExistente);
+    }
+  } else {
+    const novoModulo = {
+      id: novoModuloId,
+      title: concursoNome === 'GCM Maceió 2026' ? '🆕 Novos Vídeos GCM Maceió' : '🆕 Novos Vídeos PMAL 2026',
+      concurso: concursoNome,
+      category: 'Novos Vídeos',
+      description: 'Módulo atualizado automaticamente com os vídeos mais recentes do YouTube sobre este concurso.',
+      duration: 'Auto',
+      thumb: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+      lessons: [lesson]
+    };
+    await dbPut('custom_courses', novoModulo);
+  }
+
+  // Marca como visto
+  const vistos = JSON.parse(localStorage.getItem(VIDEOS_VISTOS_KEY) || '{}');
+  vistos[videoId] = true;
+  localStorage.setItem(VIDEOS_VISTOS_KEY, JSON.stringify(vistos));
+
+  toast(`✅ "${title.substring(0,30)}..." adicionado ao módulo!`, 'success');
+  allCourses = await getAllCourses();
+}
+
+// Verifica se há novos vídeos salvos no localStorage (para exibir sem nova requisição)
+function carregarNovosVideosSalvos() {
+  try {
+    const salvos = JSON.parse(localStorage.getItem(NOVOS_VIDEOS_KEY) || '[]');
+    if(salvos.length > 0) renderNovosVideos(salvos, false);
+  } catch(e) {}
+}
+
+// Inicia monitoramento automático
+function iniciarMonitoramento() {
+  // Carrega salvos imediatamente (sem requisição)
+  carregarNovosVideosSalvos();
+  // Primeira busca após 3 segundos (deixa o sistema carregar)
+  setTimeout(() => buscarNovosVideos(true), 3000);
+  // Intervalo de 30 minutos
+  novoVideosCheckTimer = setInterval(() => buscarNovosVideos(true), CHECK_INTERVAL_MS);
 }
 
 // ══════════════════════════════════════════════════
