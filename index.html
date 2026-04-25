@@ -38,6 +38,35 @@
   --sidebar-w: 266px;
 }
 
+/* DARK MODE */
+[data-theme="dark"] {
+  --bg: #0f1117;
+  --bg2: #161b27;
+  --surface: #1a2035;
+  --surface2: #1e2640;
+  --surface3: #232d4a;
+  --border: #2a3556;
+  --border2: #354069;
+  --accent: #6366f1;
+  --accent-light: rgba(99,102,241,0.12);
+  --accent-mid: rgba(99,102,241,0.22);
+  --accent2: #f472b6;
+  --accent3: #34d399;
+  --accent4: #fbbf24;
+  --gcm: #fbbf24;
+  --gcm-bg: rgba(251,191,36,0.12);
+  --gcm-border: rgba(251,191,36,0.3);
+  --pmal: #60a5fa;
+  --pmal-bg: rgba(96,165,250,0.12);
+  --pmal-border: rgba(96,165,250,0.3);
+  --text: #e2e8f0;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --card: #1a2035;
+  --shadow: 0 1px 8px rgba(0,0,0,0.3), 0 4px 24px rgba(0,0,0,0.2);
+  --shadow-lg: 0 4px 24px rgba(0,0,0,0.4);
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -499,10 +528,60 @@ body {
 .player-course-title { flex:1; font-family:'Playfair Display',serif; font-weight:700; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); }
 .player-layout { display:flex; flex:1; overflow:hidden; }
 .video-area { flex:1; display:flex; flex-direction:column; overflow-y:auto; padding:20px; gap:16px; }
-.video-wrapper { width:100%; aspect-ratio:16/9; background:#000; border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-lg); position:relative; }
-.video-wrapper iframe { width:100%; height:100%; border:none; display:block; position:absolute; inset:0; }
+.video-wrapper {
+  width:100%; aspect-ratio:16/9; background:#000;
+  border-radius:var(--radius); overflow:hidden;
+  box-shadow:var(--shadow-lg); position:relative;
+}
+/* Poster layer — shown before user clicks play */
+.video-poster {
+  position:absolute; inset:0; z-index:5;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; background:#000;
+}
+.video-poster img { width:100%; height:100%; object-fit:cover; display:block; opacity:0.85; }
+.video-poster-btn {
+  position:absolute;
+  width:68px; height:68px; border-radius:50%;
+  background:rgba(255,0,0,0.92);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 4px 24px rgba(0,0,0,0.5);
+  transition:transform 0.18s, background 0.18s;
+}
+.video-poster:hover .video-poster-btn { transform:scale(1.1); background:#ff0000; }
+.video-poster-btn svg { width:28px; height:28px; fill:#fff; margin-left:4px; }
+.video-poster-title {
+  position:absolute; bottom:0; left:0; right:0;
+  background:linear-gradient(transparent, rgba(0,0,0,0.8));
+  padding:18px 14px 12px;
+  font-size:13px; font-weight:600; color:#fff;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+/* Iframe — hidden until poster is clicked */
+.video-wrapper iframe {
+  width:100%; height:100%; border:none; display:none;
+  position:absolute; inset:0;
+}
+.video-wrapper.playing .video-poster { display:none; }
+.video-wrapper.playing iframe { display:block; }
+/* Fallback mode */
+.video-wrapper.fallback-mode .video-poster { display:none; }
 .video-wrapper.fallback-mode iframe { display:none; }
 .video-wrapper.fallback-mode #video-fallback { display:flex !important; }
+/* External open btn next to video */
+.video-ext-row {
+  display:flex; align-items:center; gap:8px;
+  margin-top:-4px;
+}
+.btn-yt-open {
+  display:inline-flex; align-items:center; gap:6px;
+  background:#ff0000; color:#fff; border:none;
+  border-radius:var(--radius-xs); padding:7px 13px;
+  font-family:'Inter',sans-serif; font-size:11px; font-weight:700;
+  cursor:pointer; text-decoration:none;
+  transition:opacity 0.15s;
+}
+.btn-yt-open:hover { opacity:0.85; }
 .video-info h1 { font-family:'Playfair Display',serif; font-weight:700; font-size:19px; margin-bottom:5px; color:var(--text); }
 .video-info p { color:var(--text2); font-size:13px; line-height:1.6; }
 .lesson-progress-section { background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); }
@@ -681,6 +760,22 @@ body {
 ::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:99px; }
 
+/* ── MODO ESCURO OVERRIDES ── */
+[data-theme="dark"] #screen-auth{background:linear-gradient(135deg,#0d1117 0%,#111827 50%,#0f172a 100%);}
+[data-theme="dark"] .auth-box{background:var(--surface);border-color:var(--border);}
+[data-theme="dark"] .form-group input,[data-theme="dark"] .form-col input,[data-theme="dark"] .form-col textarea,[data-theme="dark"] .form-col select{background:var(--bg2);color:var(--text);border-color:var(--border);}
+[data-theme="dark"] .welcome-banner{background:linear-gradient(135deg,#312e81 0%,#4c1d95 50%,#1e3a8a 100%);}
+[data-theme="dark"] .simulado-header{background:linear-gradient(135deg,rgba(52,211,153,0.06),rgba(16,185,129,0.03));border-color:rgba(52,211,153,0.18);}
+[data-theme="dark"] .planner-header{background:linear-gradient(135deg,rgba(96,165,250,0.08),rgba(29,78,216,0.05));border-color:rgba(96,165,250,0.18);}
+[data-theme="dark"] .materials-header{background:linear-gradient(135deg,#312e81,#1e3a8a);}
+[data-theme="dark"] .certificate{background:linear-gradient(135deg,var(--surface),var(--surface2));}
+[data-theme="dark"] #video-fallback{background:linear-gradient(135deg,var(--surface),var(--surface2))!important;}
+[data-theme="dark"] .video-poster{background:#0d1117;}
+[data-theme="dark"] #monitor-status-panel{background:linear-gradient(135deg,rgba(52,211,153,0.06),rgba(16,185,129,0.04))!important;border-color:rgba(52,211,153,0.2)!important;}
+[data-theme="dark"] .q-explanation{background:rgba(52,211,153,0.08);border-left-color:var(--accent3);}
+[data-theme="dark"] .auth-tabs{background:var(--bg2);}
+[data-theme="dark"] .search-box{background:var(--surface2);}
+
 /* CRONOGRAMA TABLE */
 .crono-section { background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius); padding:20px; grid-column:1/-1; box-shadow:var(--shadow); margin-bottom:16px; }
 .crono-section h3 { font-family:'Playfair Display',serif; font-size:15px; margin-bottom:14px; color:var(--text); display:flex; align-items:center; gap:8px; }
@@ -798,7 +893,9 @@ body {
         <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
       <div class="topbar-title" id="topbar-title">Início</div>
-      <div class="topbar-actions" id="topbar-actions"></div>
+      <div class="topbar-actions" id="topbar-actions">
+        <button onclick="toggleTheme()" id="theme-btn" title="Alternar modo escuro" style="background:transparent;border:1.5px solid var(--border2);border-radius:var(--radius-xs);padding:6px 10px;cursor:pointer;font-size:15px;color:var(--text2);transition:all 0.15s;line-height:1" aria-label="Modo escuro">🌙</button>
+      </div>
     </header>
 
     <!-- DASHBOARD -->
@@ -1028,6 +1125,10 @@ body {
 
 <!-- PLAYER -->
 <div id="screen-player" class="screen">
+  <!-- Barra de progresso global do curso no topo -->
+  <div id="player-top-bar" style="height:3px;background:var(--border);position:sticky;top:0;z-index:200;overflow:hidden;">
+    <div id="player-top-fill" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#7c3aed);transition:width 0.6s ease;"></div>
+  </div>
   <header class="player-topbar">
     <button class="btn-back" onclick="backFromPlayer()">← Voltar</button>
     <div class="player-course-title" id="player-course-title">Carregando...</div>
@@ -1036,6 +1137,14 @@ body {
   <div class="player-layout">
     <main class="video-area">
       <div class="video-wrapper" id="video-wrapper">
+        <!-- Poster clicável — evita bloqueio anti-bot do YouTube -->
+        <div class="video-poster" id="video-poster" onclick="activatePlayer()">
+          <img id="video-poster-img" src="" alt="">
+          <div class="video-poster-btn">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+          <div class="video-poster-title" id="video-poster-title"></div>
+        </div>
         <iframe id="yt-iframe" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
         <div id="video-fallback" style="display:none;width:100%;height:100%;background:linear-gradient(135deg,#f0f4ff,#e8f0fe);flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:28px;text-align:center;position:absolute;inset:0;">
           <div style="font-size:48px;">🔒</div>
@@ -1053,9 +1162,20 @@ body {
           </div>
         </div>
       </div>
+      <div class="video-ext-row" id="video-ext-row" style="display:none">
+        <a id="fallback-yt-link" href="#" target="_blank" rel="noopener" class="btn-yt-open">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.77 1.52V6.75a4.83 4.83 0 0 1-1-.06z"/></svg>
+          ▶ Abrir no YouTube
+        </a>
+        <span style="font-size:11px;color:var(--text3)">Se o vídeo não carregar, assista diretamente</span>
+      </div>
       <div class="video-info">
         <h1 id="player-lesson-title">Título da Aula</h1>
         <p id="player-course-desc"></p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:-4px">
+        <button class="btn-ghost" id="btn-prev-lesson" onclick="prevLesson()" style="font-size:12px">← Anterior</button>
+        <button class="btn-ghost" id="btn-next-lesson" onclick="nextLessonPlayer()" style="font-size:12px">Próxima →</button>
       </div>
       <div class="lesson-progress-section">
         <h3 id="progress-section-title">Seu progresso neste módulo</h3>
@@ -2004,9 +2124,12 @@ async function showApp(){
   document.getElementById('sidebar-avatar').textContent=currentUser.name.charAt(0).toUpperCase();
   document.getElementById('sidebar-role').textContent=currentUser.isAdmin?'⚡ Admin':'Aluno';
   document.getElementById('nav-admin-section').style.display=currentUser.isAdmin?'block':'none';
+  // Sync theme button emoji
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  const themeBtn=document.getElementById('theme-btn');
+  if(themeBtn)themeBtn.textContent=isDark?'☀️':'🌙';
   await navigate('dashboard');
-  // Inicia monitoramento automático de novos vídeos
-  if(novoVideosCheckTimer) clearInterval(novoVideosCheckTimer);
+  if(novoVideosCheckTimer)clearInterval(novoVideosCheckTimer);
   iniciarMonitoramento();
 }
 async function navigate(page){
@@ -2016,7 +2139,10 @@ async function navigate(page){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const titles={dashboard:'Início',courses:'Videoaulas',materials:'Materiais PDF',simulado:'Simulados',planner:'Cronograma',profile:'Certificados',admin:'Gerenciar'};
   document.getElementById('topbar-title').textContent=titles[page]||page;
+  // Preserve theme button
+  const themeBtn=document.getElementById('theme-btn');
   document.getElementById('topbar-actions').innerHTML='';
+  if(themeBtn)document.getElementById('topbar-actions').appendChild(themeBtn);
   allCourses=await getAllCourses();
   if(page==='dashboard')await renderDashboard();
   else if(page==='courses')await renderCourses();
@@ -2037,8 +2163,12 @@ function closeSidebar(){document.getElementById('sidebar').classList.remove('ope
 // ══════════════════════════════════════════════════
 function getYTId(url){if(!url)return null;const r=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|live\/))([^?&\s]+)/);return r?r[1]:null;}
 function getThumb(url){const id=getYTId(url);return id?`https://img.youtube.com/vi/${id}/mqdefault.jpg`:null;}
-function getEmbedUrl(url){const id=getYTId(url);return id?`https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&autoplay=1`:''}
-
+function getEmbedUrl(url){
+  const id=getYTId(url);
+  if(!id)return '';
+  const origin=encodeURIComponent(location.origin||'https://eduvault.local');
+  return `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1&autoplay=1&enablejsapi=1&origin=${origin}&cc_load_policy=0&iv_load_policy=3`;
+}
 // ══════════════════════════════════════════════════
 //  PROGRESS
 // ══════════════════════════════════════════════════
@@ -2528,29 +2658,79 @@ function loadLesson(idx){
   const lessons=playerState.course.lessons||[];
   if(!lessons[idx])return;
   playerState.lessonIdx=idx;
-  document.getElementById('video-wrapper').classList.remove('fallback-mode');
+  const lesson=lessons[idx];
+  document.getElementById('video-wrapper').classList.remove('fallback-mode','playing');
   document.querySelectorAll('.playlist-item').forEach((el,i)=>el.classList.toggle('active',i===idx));
-  document.getElementById('player-lesson-title').textContent=lessons[idx].title;
+  document.getElementById('player-lesson-title').textContent=lesson.title;
   document.getElementById('player-course-desc').textContent=playerState.course.description||'';
   updatePlayerProgress();
   const btnDone=document.getElementById('btn-mark-done');
   btnDone.disabled=playerState.done.includes(idx);
   btnDone.innerHTML=playerState.done.includes(idx)?'✓ Aula já concluída':'✓ Marcar aula como concluída';
-  playerState.currentUrl=lessons[idx].url;
-  document.getElementById('fallback-yt-link').href=lessons[idx].url;
-  const iframe=document.getElementById('yt-iframe');
-  iframe.src=getEmbedUrl(lessons[idx].url);
+  playerState.currentUrl=lesson.url;
+  const ytLink=document.getElementById('fallback-yt-link');
+  ytLink.href=lesson.url;
+  // Poster
+  const ytId=getYTId(lesson.url);
+  const posterImg=document.getElementById('video-poster-img');
+  posterImg.src=ytId?`https://img.youtube.com/vi/${ytId}/maxresdefault.jpg`:'';
+  posterImg.onerror=function(){this.src=ytId?`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`:''};
+  document.getElementById('video-poster-title').textContent=lesson.title;
+  // Limpa iframe (não carrega ainda)
+  document.getElementById('yt-iframe').src='';
+  // Botão externo YT sempre visível
+  document.getElementById('video-ext-row').style.display='flex';
+  // Remove listeners antigos
   if(window._ytMsgHandler)window.removeEventListener('message',window._ytMsgHandler);
   clearTimeout(window._ytFallbackTimer);
-  window._ytFallbackTimer=setTimeout(()=>checkEmbedBlocked(idx),5000);
+}
+function activatePlayer(){
+  const lessons=playerState.course?.lessons||[];
+  const lesson=lessons[playerState.lessonIdx];
+  if(!lesson)return;
+  const wrapper=document.getElementById('video-wrapper');
+  const iframe=document.getElementById('yt-iframe');
+  iframe.src=getEmbedUrl(lesson.url);
+  wrapper.classList.add('playing');
+  // Fallback por timeout (vídeo pode bloquear embed)
+  clearTimeout(window._ytFallbackTimer);
+  window._ytFallbackTimer=setTimeout(()=>checkEmbedBlocked(),7000);
+  if(window._ytMsgHandler)window.removeEventListener('message',window._ytMsgHandler);
   window._ytMsgHandler=function(e){
     if(!e.data)return;
     try{const d=typeof e.data==='string'?JSON.parse(e.data):e.data;if(d.event==='infoDelivery'&&d.info&&d.info.errorCode){const c=d.info.errorCode;if(c===150||c===153||c===101)showVideoFallback();}}catch(_){}
   };
   window.addEventListener('message',window._ytMsgHandler);
 }
-function checkEmbedBlocked(idx){const iframe=document.getElementById('yt-iframe');try{if(!iframe.src||iframe.src==='about:blank')showVideoFallback();}catch(e){}}
-function showVideoFallback(){clearTimeout(window._ytFallbackTimer);document.getElementById('video-wrapper').classList.add('fallback-mode');document.getElementById('yt-iframe').src='';toast('Este vídeo não permite incorporação — clique em assistir no YouTube','error');}
+function checkEmbedBlocked(){
+  const iframe=document.getElementById('yt-iframe');
+  try{if(!iframe.src||iframe.src==='about:blank')showVideoFallback();}catch(e){}
+}
+function showVideoFallback(){
+  clearTimeout(window._ytFallbackTimer);
+  document.getElementById('video-wrapper').classList.remove('playing');
+  document.getElementById('video-wrapper').classList.add('fallback-mode');
+  document.getElementById('yt-iframe').src='';
+  toast('Este vídeo requer login no YouTube — use o botão abaixo para assistir','error');
+}
+function prevLesson(){
+  if(playerState.lessonIdx>0)loadLesson(playerState.lessonIdx-1);
+  else toast('Esta é a primeira aula','error');
+}
+function nextLessonPlayer(){
+  const total=(playerState.course?.lessons||[]).length;
+  if(playerState.lessonIdx+1<total)loadLesson(playerState.lessonIdx+1);
+  else toast('Esta é a última aula do módulo','error');
+}
+// Atalhos de teclado no player
+document.addEventListener('keydown',function(e){
+  const onPlayer=document.getElementById('screen-player').classList.contains('active');
+  if(!onPlayer)return;
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  if(e.key==='ArrowRight'||e.key==='l')nextLessonPlayer();
+  if(e.key==='ArrowLeft'||e.key==='j')prevLesson();
+  if(e.key===' '||e.key==='k'){e.preventDefault();activatePlayer();}
+});
 async function markLessonDoneFromFallback(){await markLessonDone();}
 function updatePlayerProgress(){
   const total=(playerState.course.lessons||[]).length;
@@ -2558,6 +2738,15 @@ function updatePlayerProgress(){
   document.getElementById('player-progress-fill').style.width=pct+'%';
   document.getElementById('player-progress-text').textContent=`${playerState.done.length} de ${total} aulas`;
   document.getElementById('player-progress-pct').textContent=pct+'%';
+  // Top progress bar
+  const topFill=document.getElementById('player-top-fill');
+  if(topFill)topFill.style.width=pct+'%';
+  // Lesson nav buttons
+  const lessons=playerState.course.lessons||[];
+  const prevBtn=document.getElementById('btn-prev-lesson');
+  const nextBtn=document.getElementById('btn-next-lesson');
+  if(prevBtn)prevBtn.disabled=playerState.lessonIdx<=0;
+  if(nextBtn)nextBtn.disabled=playerState.lessonIdx>=lessons.length-1;
   const certBtn=document.getElementById('btn-get-cert');
   if(total>0&&playerState.done.length>=total){certBtn.style.display='flex';document.getElementById('progress-section-title').textContent='🎉 Módulo concluído! Parabéns!';}
   else{certBtn.style.display='none';document.getElementById('progress-section-title').textContent='Seu progresso neste módulo';}
@@ -2573,14 +2762,15 @@ async function markLessonDone(){
   document.getElementById('btn-mark-done').innerHTML='✓ Aula já concluída';
   toast('Aula concluída! Continue assim! 💪','success');
   const lessons=playerState.course.lessons||[];
-  if(idx+1<lessons.length)setTimeout(()=>loadLesson(idx+1),800);
+  if(idx+1<lessons.length)setTimeout(()=>{loadLesson(idx+1);},1200);
 }
 function togglePlaylist(){document.getElementById('playlist-sidebar').classList.toggle('open');}
 function backFromPlayer(){
   clearTimeout(window._ytFallbackTimer);
   if(window._ytMsgHandler)window.removeEventListener('message',window._ytMsgHandler);
   document.getElementById('yt-iframe').src='';
-  document.getElementById('video-wrapper').classList.remove('fallback-mode');
+  const wrapper=document.getElementById('video-wrapper');
+  wrapper.classList.remove('fallback-mode','playing');
   showScreen('screen-app');
   showApp().then(()=>navigate('courses'));
 }
@@ -2599,9 +2789,15 @@ function showCertificate(){
 }
 function backFromCert(){
   showScreen('screen-player');
-  document.getElementById('video-wrapper').classList.remove('fallback-mode');
+  const wrapper=document.getElementById('video-wrapper');
+  wrapper.classList.remove('fallback-mode','playing');
   const lessons=playerState.course?.lessons||[];
-  if(lessons[playerState.lessonIdx]){document.getElementById('fallback-yt-link').href=lessons[playerState.lessonIdx].url;document.getElementById('yt-iframe').src=getEmbedUrl(lessons[playerState.lessonIdx].url);}
+  if(lessons[playerState.lessonIdx]){
+    document.getElementById('fallback-yt-link').href=lessons[playerState.lessonIdx].url;
+    // Reload poster
+    const ytId=getYTId(lessons[playerState.lessonIdx].url);
+    if(ytId){document.getElementById('video-poster-img').src=`https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;}
+  }
 }
 
 // ══════════════════════════════════════════════════
@@ -3119,8 +3315,27 @@ function _setMonitorStatus(msg) {
 }
 
 // ══════════════════════════════════════════════════
-//  TOAST
+//  THEME TOGGLE (Dark / Light)
 // ══════════════════════════════════════════════════
+function toggleTheme(){
+  const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+  const next=isDark?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  localStorage.setItem('ev_theme',next);
+  const btn=document.getElementById('theme-btn');
+  if(btn)btn.textContent=next==='dark'?'☀️':'🌙';
+}
+(function initTheme(){
+  const saved=localStorage.getItem('ev_theme');
+  const prefDark=window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches;
+  const theme=saved||(prefDark?'dark':'light');
+  document.documentElement.setAttribute('data-theme',theme);
+  // btn updated after DOM ready
+  window.addEventListener('DOMContentLoaded',()=>{
+    const btn=document.getElementById('theme-btn');
+    if(btn)btn.textContent=theme==='dark'?'☀️':'🌙';
+  });
+})();
 function toast(msg,type='success'){
   const el=document.createElement('div');el.className=`toast ${type}`;
   el.innerHTML=`<div class="toast-dot"></div>${msg}`;
